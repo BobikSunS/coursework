@@ -42,6 +42,26 @@ function dijkstra($graph, $start, $end) {
     return ['path' => array_reverse($path), 'distance' => $dist[$end]];
 }
 
+function formatDeliveryTime($hours) {
+    $days = $hours / 24;
+    
+    if ($days < 1) {
+        return "Менее суток";
+    } elseif ($days <= 1.5) {
+        return "1-1.5 дня";
+    } elseif ($days <= 2) {
+        return "1.5-2 дня";
+    } elseif ($days <= 3) {
+        return "2-3 дня";
+    } elseif ($days <= 5) {
+        return "3-5 дней";
+    } elseif ($days <= 7) {
+        return "5-7 дней";
+    } else {
+        return "Более недели";
+    }
+}
+
 $result = $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -134,7 +154,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </nav>
 
-<div class="container mt-5 flex-grow-1">
+<div class="container mt-5 flex-grow-1 main-content">
     <h2 class="text-center text-white mb-4">Выберите оператора</h2>
     <div class="row justify-content-center g-4">
         <?php foreach($carriers as $c): ?>
@@ -239,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card mt-5 result-box">
         <div class="card-body text-center">
             <h2><?= $result['cost'] ?> BYN</h2>
-            <p class="lead">Время доставки: ~<?= $result['hours'] ?> ч (<?= round($result['distance']) ?> км)</p>
+            <p class="lead">Время доставки: <?= formatDeliveryTime($result['hours']) ?> (<?= round($result['distance']) ?> км)</p>
             <p><strong>Трек-номер:</strong> 
                 <span class="badge bg-danger fs-5"><?= $result['track'] ?></span>
                 <button onclick="navigator.clipboard.writeText('<?= $result['track'] ?>')" class="btn btn-sm btn-outline-light ms-2">Копировать</button>
@@ -335,9 +355,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-header bg-secondary text-white">
             <h4>Сравнение операторов</h4>
             <div class="btn-group" role="group">
-                <a href="?filter=all&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?>&weight=<?= $_POST['weight'] ?? '' ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'all' ? 'btn-primary' : 'btn-outline-light' ?>">Все</a>
-                <a href="?filter=cheapest&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?>&weight=<?= $_POST['weight'] ?? '' ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'cheapest' ? 'btn-success' : 'btn-outline-light' ?>">Самый дешевый</a>
-                <a href="?filter=fastest&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?>&weight=<?= $_POST['weight'] ?? '' ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'fastest' ? 'btn-info' : 'btn-outline-light' ?>">Самый быстрый</a>
+                <a href="?filter=all&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?? '' ?>&weight=<?= $_POST['weight'] ?? ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : '') ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'all' ? 'btn-primary' : 'btn-outline-light' ?>">Все</a>
+                <a href="?filter=cheapest&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?? '' ?>&weight=<?= $_POST['weight'] ?? ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : '') ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'cheapest' ? 'btn-success' : 'btn-outline-light' ?>">Самый дешевый</a>
+                <a href="?filter=fastest&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?? '' ?>&weight=<?= $_POST['weight'] ?? ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : '') ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'fastest' ? 'btn-info' : 'btn-outline-light' ?>">Самый быстрый</a>
             </div>
         </div>
         <div class="card-body">
@@ -357,7 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <tr>
                             <td style="color: <?= $res['carrier']['color'] ?>"><strong><?= htmlspecialchars($res['carrier']['name']) ?></strong></td>
                             <td><strong><?= $res['cost'] ?> BYN</strong></td>
-                            <td>~<?= $res['hours'] ?> ч</td>
+                            <td>~<?= formatDeliveryTime($res['hours']) ?></td>
                             <td><?= round($res['distance']) ?> км</td>
                             <td>
                                 <a href="order_form.php?carrier=<?= $res['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $res['cost'] ?>" 
@@ -419,6 +439,45 @@ function toggleFields(type) {
     document.getElementById('letter-div').style.display = isLetter ? 'block' : 'none';
     document.getElementById('gabarit-div').style.display = isLetter ? 'none' : 'block';
 }
+
+// Theme functionality for cross-page consistency
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    // Save theme preference in localStorage
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    
+    // Apply theme to all iframes and child elements
+    applyThemeToPage(isDark ? 'dark' : 'light');
+}
+
+function applyThemeToPage(theme) {
+    // This function ensures theme consistency across the site
+    if (theme === 'dark') {
+        document.body.classList.add('dark');
+    } else {
+        document.body.classList.remove('dark');
+    }
+}
+
+// Apply saved theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+    
+    // Set up a global theme listener for cross-page consistency
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'theme') {
+            if (e.newValue === 'dark') {
+                document.body.classList.add('dark');
+            } else {
+                document.body.classList.remove('dark');
+            }
+        }
+    });
+});
 </script>
 </body>
 </html>

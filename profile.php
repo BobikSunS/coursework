@@ -23,7 +23,7 @@ $user = $_SESSION['user'];
         </div>
     </div>
 </nav>
-<div class="container mt-5 flex-grow-1">
+<div class="container mt-5 flex-grow-1 main-content">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card card-shadow">
@@ -75,6 +75,18 @@ function toggleTheme() {
     // Save theme preference in localStorage
     const isDark = document.body.classList.contains('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    
+    // Apply theme to all iframes and child elements
+    applyThemeToPage(isDark ? 'dark' : 'light');
+}
+
+function applyThemeToPage(theme) {
+    // This function ensures theme consistency across the site
+    if (theme === 'dark') {
+        document.body.classList.add('dark');
+    } else {
+        document.body.classList.remove('dark');
+    }
 }
 
 // Apply saved theme on page load
@@ -83,6 +95,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (savedTheme === 'dark') {
         document.body.classList.add('dark');
     }
+    
+    // Set up a global theme listener for cross-page consistency
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'theme') {
+            if (e.newValue === 'dark') {
+                document.body.classList.add('dark');
+            } else {
+                document.body.classList.remove('dark');
+            }
+        }
+    });
 });
 </script>
 

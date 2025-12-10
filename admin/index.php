@@ -5,23 +5,40 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
     exit;
 }
 
+// Обработка добавления нового оператора
+if (isset($_POST['action']) && $_POST['action'] === 'add_carrier') {
+    $name = trim($_POST['name'] ?? '');
+    $color = $_POST['color'] ?? '#000000';
+    $base_cost = (float)($_POST['base_cost'] ?? 0);
+    $cost_per_kg = (float)($_POST['cost_per_kg'] ?? 0);
+    $cost_per_km = (float)($_POST['cost_per_km'] ?? 0);
+    $max_weight = (float)($_POST['max_weight'] ?? 0);
+    $speed_kmh = (float)($_POST['speed_kmh'] ?? 0);
+    $description = trim($_POST['description'] ?? '');
+    
+    if (!empty($name)) {
+        $stmt = $db->prepare("INSERT INTO carriers (name, color, base_cost, cost_per_kg, cost_per_km, max_weight, speed_kmh, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$name, $color, $base_cost, $cost_per_kg, $cost_per_km, $max_weight, $speed_kmh, $description]);
+    }
+}
+
 // Обработка редактирования тарифа
-if ($_POST['action'] ?? '' === 'update_carrier') {
-    $id = (int)$_POST['id'];
-    $base_cost = (float)$_POST['base_cost'];
-    $cost_per_kg = (float)$_POST['cost_per_kg'];
-    $cost_per_km = (float)$_POST['cost_per_km'];
-    $max_weight = (float)$_POST['max_weight'];
-    $speed_kmh = (float)$_POST['speed_kmh'];
+if (isset($_POST['action']) && $_POST['action'] === 'update_carrier') {
+    $id = (int)($_POST['id'] ?? 0);
+    $base_cost = (float)($_POST['base_cost'] ?? 0);
+    $cost_per_kg = (float)($_POST['cost_per_kg'] ?? 0);
+    $cost_per_km = (float)($_POST['cost_per_km'] ?? 0);
+    $max_weight = (float)($_POST['max_weight'] ?? 0);
+    $speed_kmh = (float)($_POST['speed_kmh'] ?? 0);
 
     $stmt = $db->prepare("UPDATE carriers SET base_cost=?, cost_per_kg=?, cost_per_km=?, max_weight=?, speed_kmh=? WHERE id=?");
     $stmt->execute([$base_cost, $cost_per_kg, $cost_per_km, $max_weight, $speed_kmh, $id]);
 }
 
 // Обработка изменения статуса заказа
-if ($_POST['action'] ?? '' === 'update_status') {
-    $order_id = (int)$_POST['order_id'];
-    $new_status = $_POST['new_status'];
+if (isset($_POST['action']) && $_POST['action'] === 'update_status') {
+    $order_id = (int)($_POST['order_id'] ?? 0);
+    $new_status = $_POST['new_status'] ?? 'created';
     
     $stmt = $db->prepare("UPDATE orders SET tracking_status=? WHERE id=?");
     $stmt->execute([$new_status, $order_id]);
@@ -200,20 +217,80 @@ $status_options = [
                     </div>
                 </div>
             </div>
+            
+            <!-- Добавление нового оператора -->
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h4>Добавить нового оператора</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="add_carrier">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Название оператора</label>
+                                <input type="text" name="name" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Цвет (HEX)</label>
+                                <input type="color" name="color" class="form-control form-control-color" value="#0066cc" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Базовая стоимость</label>
+                                <input type="number" step="0.01" name="base_cost" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Стоимость за кг</label>
+                                <input type="number" step="0.01" name="cost_per_kg" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Стоимость за км</label>
+                                <input type="number" step="0.001" name="cost_per_km" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Макс. вес (кг)</label>
+                                <input type="number" step="0.1" name="max_weight" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Скорость (км/ч)</label>
+                                <input type="number" step="0.1" name="speed_kmh" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Описание</label>
+                                <input type="text" name="description" class="form-control">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-info btn-lg w-100">Добавить оператора</button>
+                    </form>
+                </div>
+            </div>
         </div>
 
-        <!-- Топ направлений -->
+        <!-- Статистика по статусам заказов -->
         <div class="col-lg-5 mb-4">
             <div class="card">
                 <div class="card-header bg-success text-white">
-                    <h5>ТОП-5 направлений</h5>
+                    <h5>Статистика по статусам заказов</h5>
                 </div>
                 <div class="card-body">
+                    <?php
+                    // Get order counts by status
+                    $status_stats = $db->query("
+                        SELECT 
+                            tracking_status,
+                            COUNT(*) as count
+                        FROM orders 
+                        GROUP BY tracking_status
+                        ORDER BY count DESC
+                    ")->fetchAll();
+                    ?>
                     <ol class="list-group list-group-numbered">
-                        <?php foreach($top_routes as $r): ?>
+                        <?php foreach($status_stats as $stat): ?>
                         <li class="list-group-item d-flex justify-content-between">
-                            <span><?= htmlspecialchars($r['from_city']) ?> → <?= htmlspecialchars($r['to_city']) ?></span>
-                            <span class="badge bg-primary rounded-pill"><?= $r['cnt'] ?></span>
+                            <span>
+                                <?= htmlspecialchars($status_options[$stat['tracking_status']] ?? $stat['tracking_status']) ?>
+                            </span>
+                            <span class="badge bg-primary rounded-pill"><?= $stat['count'] ?></span>
                         </li>
                         <?php endforeach; ?>
                     </ol>
@@ -258,7 +335,7 @@ $status_options = [
                                     <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
                                     <select name="new_status" class="form-select form-select-sm d-inline w-auto me-2">
                                         <?php foreach($status_options as $status_key => $status_name): ?>
-                                        <option value="<?= $status_key ?>" <?= ($order['tracking_status'] == $status_key) ? 'selected' : '' ?>>
+                                        <option value="<?= $status_key ?>" <?= (($order['tracking_status'] ?? 'created') == $status_key) ? 'selected' : '' ?>>
                                             <?= $status_name ?>
                                         </option>
                                         <?php endforeach; ?>
