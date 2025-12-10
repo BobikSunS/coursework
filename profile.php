@@ -10,7 +10,7 @@ $user = $_SESSION['user'];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-dark bg-primary shadow-lg">
     <div class="container-fluid">
         <a class="navbar-brand">Профиль пользователя</a>
@@ -23,7 +23,7 @@ $user = $_SESSION['user'];
         </div>
     </div>
 </nav>
-<div class="container mt-5">
+<div class="container mt-5 flex-grow-1">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card card-shadow">
@@ -35,9 +35,22 @@ $user = $_SESSION['user'];
                         <a href="calculator.php" class="btn btn-primary btn-lg">Рассчитать доставку</a>
                         <a href="order_form.php" class="btn btn-success btn-lg">Оформить заказ</a>
                         <a href="history.php" class="btn btn-info btn-lg">История заказов</a>
+                        <!-- New tracking functionality -->
+                        <div class="card mt-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Отследить заказ</h5>
+                                <form method="GET" action="track.php" class="mb-3">
+                                    <div class="input-group">
+                                        <input type="text" name="track" class="form-control" placeholder="Введите трек-номер" required>
+                                        <button type="submit" class="btn btn-primary">Отследить</button>
+                                    </div>
+                                </form>
+                                <p class="text-muted small">Введите 12-значный трек-номер для отслеживания статуса доставки</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="mt-4">
-                        <button onclick="document.body.classList.toggle('dark')" class="btn btn-outline-warning btn-lg">
+                        <button onclick="toggleTheme()" class="btn btn-outline-warning btn-lg">
                             Тёмная тема
                         </button>
                     </div>
@@ -46,5 +59,33 @@ $user = $_SESSION['user'];
         </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer mt-auto py-3" style="background-color: rgba(0,0,0,0.05);">
+    <div class="container text-center text-muted">
+        <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
+        <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
+        <p class="mb-0">Email: info@delivery.by</p>
+    </div>
+</footer>
+
+<script>
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    // Save theme preference in localStorage
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+// Apply saved theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

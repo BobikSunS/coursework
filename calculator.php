@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-dark bg-primary shadow-lg">
     <div class="container-fluid">
         <a class="navbar-brand">Почтовый калькулятор</a>
@@ -134,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </nav>
 
-<div class="container mt-5">
+<div class="container mt-5 flex-grow-1">
     <h2 class="text-center text-white mb-4">Выберите оператора</h2>
     <div class="row justify-content-center g-4">
         <?php foreach($carriers as $c): ?>
@@ -154,55 +154,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h4 class="text-center mb-4">Расчёт для: <strong id="carrier-name"></strong></h4>
             <form method="POST">
                 <input type="hidden" name="carrier" id="selected-carrier">
+                <input type="hidden" name="from" id="selected-from" value="<?= $_POST['from'] ?? '' ?>">
+                <input type="hidden" name="to" id="selected-to" value="<?= $_POST['to'] ?? '' ?>">
 
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label>Откуда</label>
-                        <select name="from" class="form-select" required><option value="">Выберите</option></select>
+                        <select name="from" class="form-select" required onchange="document.getElementById('selected-from').value = this.value;">
+                            <option value="">Выберите</option>
+                            <?php 
+                            if (isset($_POST['carrier'])) {
+                                $carrier_id = (int)$_POST['carrier'];
+                                $offices = $db->query("SELECT * FROM offices WHERE carrier_id = $carrier_id")->fetchAll();
+                                foreach($offices as $o): 
+                            ?>
+                                <option value="<?= $o['id'] ?>" <?= (isset($_POST['from']) && $_POST['from'] == $o['id']) ? 'selected' : '' ?>><?= htmlspecialchars($o['city']) ?> — <?= htmlspecialchars($o['address']) ?></option>
+                            <?php endforeach; } ?>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label>Куда</label>
-                        <select name="to" class="form-select" required><option value="">Выберите</option></select>
+                        <select name="to" class="form-select" required onchange="document.getElementById('selected-to').value = this.value;">
+                            <option value="">Выберите</option>
+                            <?php 
+                            if (isset($_POST['carrier'])) {
+                                $carrier_id = (int)$_POST['carrier'];
+                                $offices = $db->query("SELECT * FROM offices WHERE carrier_id = $carrier_id")->fetchAll();
+                                foreach($offices as $o): 
+                            ?>
+                                <option value="<?= $o['id'] ?>" <?= (isset($_POST['to']) && $_POST['to'] == $o['id']) ? 'selected' : '' ?>><?= htmlspecialchars($o['city']) ?> — <?= htmlspecialchars($o['address']) ?></option>
+                            <?php endforeach; } ?>
+                        </select>
                     </div>
 
                     <div class="col-md-4">
                         <label>Тип отправления</label>
                         <select name="package_type" class="form-select" onchange="toggleFields(this.value)" required>
-                            <option value="parcel">Посылка</option>
-                            <option value="letter">Письмо</option>
+                            <option value="parcel" <?= (isset($_POST['package_type']) && $_POST['package_type'] == 'parcel') ? 'selected' : '' ?>>Посылка</option>
+                            <option value="letter" <?= (isset($_POST['package_type']) && $_POST['package_type'] == 'letter') ? 'selected' : '' ?>>Письмо</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4" id="weight-div">
+                    <div class="col-md-4" id="weight-div" style="<?= (isset($_POST['package_type']) && $_POST['package_type'] == 'letter') ? 'display:none;' : '' ?>">
                         <label>Вес (кг)</label>
-                        <input type="number" step="0.1" name="weight" class="form-control" value="1" min="0.1" required>
+                        <input type="number" step="0.1" name="weight" class="form-control" value="<?= $_POST['weight'] ?? '1' ?>" min="0.1" required>
                     </div>
 
-                    <div class="col-md-4" id="letter-div" style="display:none;">
+                    <div class="col-md-4" id="letter-div" style="<?= (isset($_POST['package_type']) && $_POST['package_type'] == 'letter') ? '' : 'display:none;' ?>">
                         <label>Количество писем</label>
-                        <input type="number" name="letter_count" class="form-control" value="1" min="1" max="50">
+                        <input type="number" name="letter_count" class="form-control" value="<?= $_POST['letter_count'] ?? '1' ?>" min="1" max="50">
                     </div>
 
-                    <div class="col-md-4" id="gabarit-div">
+                    <div class="col-md-4" id="gabarit-div" style="<?= (isset($_POST['package_type']) && $_POST['package_type'] == 'letter') ? 'display:none;' : '' ?>">
                         <label>Габариты</label>
                         <select name="gabarit" class="form-select">
-                            <option value="small">Маленький</option>
-                            <option value="medium">Средний (+6 BYN)</option>
-                            <option value="large">Крупный (+15 BYN)</option>
+                            <option value="small" <?= (isset($_POST['gabarit']) && $_POST['gabarit'] == 'small') ? 'selected' : '' ?>>Маленький</option>
+                            <option value="medium" <?= (isset($_POST['gabarit']) && $_POST['gabarit'] == 'medium') ? 'selected' : '' ?>>Средний (+6 BYN)</option>
+                            <option value="large" <?= (isset($_POST['gabarit']) && $_POST['gabarit'] == 'large') ? 'selected' : '' ?>>Крупный (+15 BYN)</option>
                         </select>
                     </div>
 
                     <div class="col-md-4">
                         <label>Скорость</label>
                         <select name="delivery_speed" class="form-select">
-                            <option value="standard">Стандарт</option>
-                            <option value="express">Экспресс (+25%)</option>
+                            <option value="standard" <?= (isset($_POST['delivery_speed']) && $_POST['delivery_speed'] == 'standard') ? 'selected' : '' ?>>Стандарт</option>
+                            <option value="express" <?= (isset($_POST['delivery_speed']) && $_POST['delivery_speed'] == 'express') ? 'selected' : '' ?>>Экспресс (+25%)</option>
                         </select>
                     </div>
 
                     <div class="col-md-4 d-flex align-items-end">
                         <div class="form-check">
-                            <input type="checkbox" name="insurance" class="form-check-input" id="ins">
+                            <input type="checkbox" name="insurance" class="form-check-input" id="ins" <?= (isset($_POST['insurance'])) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="ins">Страховка (+2%)</label>
                         </div>
                     </div>
@@ -235,10 +257,137 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <?php endif; ?>
 
+    <?php 
+    // Get all calculation results for comparison if form was submitted
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
+        // Fetch all carrier options for the same route
+        $from = (int)$_POST['from'];
+        $to = (int)$_POST['to'];
+        
+        $all_results = [];
+        foreach($carriers as $c) {
+            $pathData = dijkstra($graph, $from, $to);
+            if ($pathData) {
+                $distance = $pathData['distance'];
+                $base_hours = $distance / $c['speed_kmh'];
+
+                $type = $_POST['package_type'];
+                $gabarit = $_POST['gabarit'] ?? 'small';
+                $speed = $_POST['delivery_speed'] ?? 'standard';
+                $insurance = isset($_POST['insurance']);
+
+                $volume_weight = 0;
+                if ($type === 'parcel') {
+                    if ($gabarit === 'medium') $volume_weight = 8;
+                    if ($gabarit === 'large') $volume_weight = 20;
+                }
+
+                $weight = $type === 'letter' 
+                    ? 0.02 * (int)($_POST['letter_count'] ?? 1)
+                    : max((float)$_POST['weight'], $volume_weight);
+
+                $max_weight = $c['max_weight'];
+                if ($gabarit === 'medium') $max_weight += 8;
+                if ($gabarit === 'large') $max_weight += 20;
+
+                if ($weight <= $max_weight) {
+                    $cost = $c['base_cost'] 
+                          + $weight * $c['cost_per_kg'] 
+                          + $distance * $c['cost_per_km'];
+
+                    if ($gabarit === 'medium') $cost += 6;
+                    if ($gabarit === 'large') $cost += 15;
+                    if ($speed === 'express') { $cost *= 1.25; $base_hours *= 0.7; }
+                    if ($insurance) $cost *= 1.02;
+                    if ($type === 'letter') $cost = max($cost, 2.5);
+
+                    $cost = round($cost, 2);
+                    $hours = round($base_hours, 1);
+
+                    $all_results[] = [
+                        'carrier' => $c,
+                        'cost' => $cost,
+                        'hours' => $hours,
+                        'distance' => $distance
+                    ];
+                }
+            }
+        }
+        
+        if (!empty($all_results)) {
+            // Sort by different criteria for filters
+            $cheapest = $all_results;
+            $fastest = $all_results;
+            
+            usort($cheapest, function($a, $b) { return $a['cost'] <=> $b['cost']; });
+            usort($fastest, function($a, $b) { return $a['hours'] <=> $b['hours']; });
+            
+            $filters = [
+                'all' => $all_results,
+                'cheapest' => $cheapest,
+                'fastest' => $fastest
+            ];
+            
+            $active_filter = $_GET['filter'] ?? 'all';
+            $results_to_show = $filters[$active_filter];
+    ?>
+    <div class="card mt-5 shadow-lg">
+        <div class="card-header bg-secondary text-white">
+            <h4>Сравнение операторов</h4>
+            <div class="btn-group" role="group">
+                <a href="?filter=all&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?>&weight=<?= $_POST['weight'] ?? '' ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'all' ? 'btn-primary' : 'btn-outline-light' ?>">Все</a>
+                <a href="?filter=cheapest&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?>&weight=<?= $_POST['weight'] ?? '' ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'cheapest' ? 'btn-success' : 'btn-outline-light' ?>">Самый дешевый</a>
+                <a href="?filter=fastest&from=<?= $from ?>&to=<?= $to ?>&package_type=<?= $_POST['package_type'] ?>&weight=<?= $_POST['weight'] ?? '' ?>&letter_count=<?= $_POST['letter_count'] ?? '' ?>&gabarit=<?= $_POST['gabarit'] ?? 'small' ?>&delivery_speed=<?= $_POST['delivery_speed'] ?? 'standard' ?>&insurance=<?= isset($_POST['insurance']) ? '1' : '0' ?>" class="btn btn-sm <?= $active_filter === 'fastest' ? 'btn-info' : 'btn-outline-light' ?>">Самый быстрый</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Оператор</th>
+                            <th>Стоимость</th>
+                            <th>Время доставки</th>
+                            <th>Расстояние</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($results_to_show as $res): ?>
+                        <tr>
+                            <td style="color: <?= $res['carrier']['color'] ?>"><strong><?= htmlspecialchars($res['carrier']['name']) ?></strong></td>
+                            <td><strong><?= $res['cost'] ?> BYN</strong></td>
+                            <td>~<?= $res['hours'] ?> ч</td>
+                            <td><?= round($res['distance']) ?> км</td>
+                            <td>
+                                <a href="order_form.php?carrier=<?= $res['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $res['cost'] ?>" 
+                                   class="btn btn-sm btn-success">Оформить</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <?php
+        }
+    }
+    ?>
+
     <?php if($error): ?>
     <div class="alert alert-danger mt-4"><?= $error ?></div>
     <?php endif; ?>
 </div>
+
+<!-- Footer -->
+<footer class="footer mt-auto py-3" style="background-color: rgba(0,0,0,0.05);">
+    <div class="container text-center text-muted">
+        <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
+        <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
+        <p class="mb-0">Email: info@delivery.by</p>
+    </div>
+</footer>
 
 <script>
 let selected = null;

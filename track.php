@@ -14,6 +14,30 @@ $order = $order->fetch();
 if (!$order) {
     die('Заказ не найден');
 }
+
+// Define order status stages
+$status_stages = [
+    'created' => ['name' => 'Создан', 'description' => 'Заказ создан'],
+    'processed' => ['name' => 'Обработан', 'description' => 'Заказ обработан'],
+    'in_transit' => ['name' => 'В пути', 'description' => 'Посылка в пути'],
+    'sort_center' => ['name' => 'Сорт. центр', 'description' => 'Посылка в сортировочном центре'],
+    'delayed' => ['name' => 'Задержка', 'description' => 'Возможна задержка доставки'],
+    'out_for_delivery' => ['name' => 'У курьера', 'description' => 'Посылка у курьера'],
+    'delivered' => ['name' => 'Доставлен', 'description' => 'Заказ доставлен'],
+    'returned' => ['name' => 'Возвращен', 'description' => 'Заказ возвращен отправителю'],
+    'cancelled' => ['name' => 'Отменен', 'description' => 'Заказ отменен']
+];
+
+// Get current status from the order (if exists) or default to 'processed'
+$current_status = $order['tracking_status'] ?? 'processed';
+
+// Calculate progress percentage based on status
+$status_keys = array_keys($status_stages);
+$current_index = array_search($current_status, $status_keys);
+if ($current_index === false) {
+    $current_index = 1; // Default to 'processed' if status not found
+}
+$progress_percentage = ($current_index / (count($status_keys) - 1)) * 100;
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -22,6 +46,48 @@ if (!$order) {
     <title>Отслеживание посылки</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
+    <style>
+        .status-bar {
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        .status-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .status-indicators {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .status-indicator {
+            text-align: center;
+            flex: 1;
+        }
+        .status-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 auto 5px;
+        }
+        .status-dot.active {
+            background: #4CAF50;
+            border: 2px solid #45a049;
+        }
+        .status-dot.completed {
+            background: #4CAF50;
+            border: 2px solid #45a049;
+        }
+        .status-label {
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-dark bg-primary shadow-lg">
@@ -41,6 +107,29 @@ if (!$order) {
     <div class="card shadow-lg">
         <div class="card-body">
             <h3 class="text-center">Статус посылки</h3>
+            
+            <!-- Status progress bar -->
+            <div class="mt-4">
+                <h5>Прогресс доставки:</h5>
+                <div class="status-bar">
+                    <div class="status-progress" style="width: <?= $progress_percentage ?>%;"></div>
+                </div>
+                
+                <div class="status-indicators">
+                    <?php foreach($status_keys as $index => $status_key): ?>
+                        <div class="status-indicator">
+                            <div class="status-dot 
+                                <?php 
+                                if ($index < $current_index) echo 'completed'; 
+                                elseif ($index == $current_index) echo 'active'; 
+                                ?>">
+                            </div>
+                            <div class="status-label"><?= htmlspecialchars($status_stages[$status_key]['name']) ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            
             <div class="row mt-4">
                 <div class="col-md-6">
                     <p><strong>Трек-номер:</strong> <?= htmlspecialchars($order['track_number']) ?></p>
@@ -53,42 +142,42 @@ if (!$order) {
                     <?php if($order['delivery_hours']): ?>
                         <p><strong>Расчетное время доставки:</strong> ~<?= $order['delivery_hours'] ?> ч</p>
                     <?php endif; ?>
-                    <p><strong>Статус:</strong> 
-                        <span class="badge bg-success">Обработан</span>
+                    <p><strong>Текущий статус:</strong> 
+                        <span class="badge bg-info"><?= htmlspecialchars($status_stages[$current_status]['name']) ?></span>
                     </p>
                 </div>
             </div>
             
-            <?php if($order['full_name'] || $order['pickup_city'] || $order['delivery_city']): ?>
+            <?php if(isset($order['full_name']) && $order['full_name'] || isset($order['pickup_city']) && $order['pickup_city'] || isset($order['delivery_city']) && $order['delivery_city']): ?>
             <div class="mt-4">
                 <h4>Детали заказа</h4>
                 <div class="row">
-                    <?php if($order['full_name']): ?>
+                    <?php if(isset($order['full_name']) && $order['full_name']): ?>
                     <div class="col-md-6">
                         <p><strong>ФИО:</strong> <?= htmlspecialchars($order['full_name']) ?></p>
                     </div>
                     <?php endif; ?>
-                    <?php if($order['home_address']): ?>
+                    <?php if(isset($order['home_address']) && $order['home_address']): ?>
                     <div class="col-md-6">
                         <p><strong>Домашний адрес:</strong> <?= htmlspecialchars($order['home_address']) ?></p>
                     </div>
                     <?php endif; ?>
-                    <?php if($order['pickup_city'] && $order['pickup_address']): ?>
+                    <?php if(isset($order['pickup_city']) && $order['pickup_city'] && isset($order['pickup_address']) && $order['pickup_address']): ?>
                     <div class="col-md-6">
                         <p><strong>Адрес получения:</strong> <?= htmlspecialchars($order['pickup_city']) ?>, <?= htmlspecialchars($order['pickup_address']) ?></p>
                     </div>
                     <?php endif; ?>
-                    <?php if($order['delivery_city'] && $order['delivery_address']): ?>
+                    <?php if(isset($order['delivery_city']) && $order['delivery_city'] && isset($order['delivery_address']) && $order['delivery_address']): ?>
                     <div class="col-md-6">
                         <p><strong>Адрес доставки:</strong> <?= htmlspecialchars($order['delivery_city']) ?>, <?= htmlspecialchars($order['delivery_address']) ?></p>
                     </div>
                     <?php endif; ?>
-                    <?php if($order['insurance'] || $order['packaging'] || $order['fragile']): ?>
+                    <?php if(isset($order['insurance']) && $order['insurance'] || isset($order['packaging']) && $order['packaging'] || isset($order['fragile']) && $order['fragile']): ?>
                     <div class="col-md-12">
                         <p><strong>Дополнительно:</strong> 
-                            <?php if($order['insurance']): ?><span class="badge bg-warning me-1">Страховка</span><?php endif; ?>
-                            <?php if($order['packaging']): ?><span class="badge bg-info me-1">Упаковка</span><?php endif; ?>
-                            <?php if($order['fragile']): ?><span class="badge bg-danger me-1">Хрупкое</span><?php endif; ?>
+                            <?php if(isset($order['insurance']) && $order['insurance']): ?><span class="badge bg-warning me-1">Страховка</span><?php endif; ?>
+                            <?php if(isset($order['packaging']) && $order['packaging']): ?><span class="badge bg-info me-1">Упаковка</span><?php endif; ?>
+                            <?php if(isset($order['fragile']) && $order['fragile']): ?><span class="badge bg-danger me-1">Хрупкое</span><?php endif; ?>
                         </p>
                     </div>
                     <?php endif; ?>
@@ -102,5 +191,16 @@ if (!$order) {
         </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer mt-5 py-4 bg-light border-top">
+    <div class="container text-center">
+        <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
+        <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
+        <p class="mb-0">Email: info@delivery.by</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
