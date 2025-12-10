@@ -10,7 +10,7 @@ $user = $_SESSION['user'];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-dark bg-primary shadow-lg">
     <div class="container-fluid">
         <a class="navbar-brand">Профиль пользователя</a>
@@ -23,7 +23,7 @@ $user = $_SESSION['user'];
         </div>
     </div>
 </nav>
-<div class="container mt-5">
+<div class="container mt-5 flex-grow-1">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card card-shadow">
@@ -50,7 +50,7 @@ $user = $_SESSION['user'];
                         </div>
                     </div>
                     <div class="mt-4">
-                        <button onclick="document.body.classList.toggle('dark')" class="btn btn-outline-warning btn-lg">
+                        <button onclick="toggleTheme()" class="btn btn-outline-warning btn-lg">
                             Тёмная тема
                         </button>
                     </div>
@@ -61,13 +61,30 @@ $user = $_SESSION['user'];
 </div>
 
 <!-- Footer -->
-<footer class="footer mt-5 py-4 bg-light border-top">
-    <div class="container text-center">
+<footer class="footer mt-auto py-3" style="background-color: rgba(0,0,0,0.05);">
+    <div class="container text-center text-muted">
         <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
         <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
         <p class="mb-0">Email: info@delivery.by</p>
     </div>
 </footer>
+
+<script>
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    // Save theme preference in localStorage
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
+// Apply saved theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+});
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
