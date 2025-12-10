@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $track = strtoupper(substr(md5(uniqid()), 0, 12));
 
             // Вставляем заказ в базу данных
-            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at, full_name, home_address, pickup_city, pickup_address, delivery_city, delivery_address, desired_date, insurance, packaging, fragile, payment_method, comment) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at, full_name, home_address, pickup_city, pickup_address, delivery_city, delivery_address, desired_date, insurance, packaging, fragile, payment_method, comment, tracking_status) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'created')");
             $stmt->execute([
                 $user['id'], $carrier_id, $weight, $cost, $track,
                 $full_name, $home_address, $pickup_city, $pickup_address,
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-<nav class="navbar navbar-dark bg-primary shadow-lg">
+<nav class="navbar navbar-dark bg-primary shadow-lg fixed-top">
     <div class="container-fluid">
         <a class="navbar-brand">Оформление заказа</a>
         <div>
@@ -149,6 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </nav>
+
+<!-- Spacer to prevent content from being hidden behind fixed navbar -->
+<div style="height: 80px;"></div>
 
 <div class="container mt-5">
     <div class="row">
@@ -366,6 +369,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer mt-5 py-4 bg-light border-top">
+    <div class="container text-center">
+        <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
+        <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
+        <p class="mb-0">Email: info@delivery.by</p>
+    </div>
+</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

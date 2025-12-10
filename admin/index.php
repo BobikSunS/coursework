@@ -18,6 +18,30 @@ if ($_POST['action'] ?? '' === 'update_carrier') {
     $stmt->execute([$base_cost, $cost_per_kg, $cost_per_km, $max_weight, $speed_kmh, $id]);
 }
 
+// Обработка изменения статуса заказа
+if ($_POST['action'] ?? '' === 'update_status') {
+    $order_id = (int)$_POST['order_id'];
+    $new_status = $_POST['new_status'];
+    
+    $stmt = $db->prepare("UPDATE orders SET tracking_status=? WHERE id=?");
+    $stmt->execute([$new_status, $order_id]);
+    
+    // Also add to status history
+    $stmt = $db->prepare("INSERT INTO tracking_status_history (order_id, status, description) VALUES (?, ?, ?)");
+    $status_descriptions = [
+        'created' => 'Заказ создан',
+        'processed' => 'Заказ обработан',
+        'in_transit' => 'Посылка в пути',
+        'sort_center' => 'Посылка в сортировочном центре',
+        'delayed' => 'Возможна задержка доставки',
+        'out_for_delivery' => 'Посылка у курьера',
+        'delivered' => 'Заказ доставлен',
+        'returned' => 'Заказ возвращен отправителю',
+        'cancelled' => 'Заказ отменен'
+    ];
+    $stmt->execute([$order_id, $new_status, $status_descriptions[$new_status] ?? 'Статус обновлен']);
+}
+
 // Статистика
 $total_orders = $db->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 $total_revenue = $db->query("SELECT SUM(cost) FROM orders")->fetchColumn() ?: 0;
@@ -51,7 +75,30 @@ $top_routes = $db->query("
     ORDER BY cnt DESC LIMIT 5
 ")->fetchAll();
 
+// Заказы для отслеживания статуса
+$recent_orders = $db->query("
+    SELECT o.*, c.name as carrier_name, u.name as user_name 
+    FROM orders o 
+    LEFT JOIN carriers c ON o.carrier_id = c.id 
+    LEFT JOIN users u ON o.user_id = u.id 
+    ORDER BY o.created_at DESC 
+    LIMIT 20
+")->fetchAll();
+
 $carriers = $db->query("SELECT * FROM carriers")->fetchAll();
+
+// Define status options
+$status_options = [
+    'created' => 'Создан',
+    'processed' => 'Обработан',
+    'in_transit' => 'В пути',
+    'sort_center' => 'Сорт. центр',
+    'delayed' => 'Задержка',
+    'out_for_delivery' => 'У курьера',
+    'delivered' => 'Доставлен',
+    'returned' => 'Возвращен',
+    'cancelled' => 'Отменен'
+];
 ?>
 
 <!DOCTYPE html>
@@ -67,6 +114,7 @@ $carriers = $db->query("SELECT * FROM carriers")->fetchAll();
         .stat-card { background: rgba(255,255,255,0.1); border-radius: 15px; padding: 20px; text-align: center; }
         body.dark .stat-card { background: rgba(255,255,255,0.08); }
         .edit-input { width: 80px; font-size: 0.9em; }
+        .status-badge { font-size: 0.8em; }
     </style>
 </head>
 <body>
@@ -170,6 +218,58 @@ $carriers = $db->query("SELECT * FROM carriers")->fetchAll();
                         <?php endforeach; ?>
                     </ol>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Управление статусами заказов -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h4>Управление статусами заказов</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Трек</th>
+                            <th>Клиент</th>
+                            <th>Оператор</th>
+                            <th>Стоимость</th>
+                            <th>Текущий статус</th>
+                            <th>Изменить статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($recent_orders as $order): ?>
+                        <tr>
+                            <td><strong><?= htmlspecialchars($order['track_number']) ?></strong></td>
+                            <td><?= htmlspecialchars($order['user_name'] ?? 'Н/Д') ?></td>
+                            <td><?= htmlspecialchars($order['carrier_name'] ?? 'Н/Д') ?></td>
+                            <td><?= $order['cost'] ?> BYN</td>
+                            <td>
+                                <span class="badge bg-info status-badge">
+                                    <?= htmlspecialchars($status_options[$order['tracking_status'] ?? 'created'] ?? 'Обработан') ?>
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" class="d-inline">
+                                    <input type="hidden" name="action" value="update_status">
+                                    <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
+                                    <select name="new_status" class="form-select form-select-sm d-inline w-auto me-2">
+                                        <?php foreach($status_options as $status_key => $status_name): ?>
+                                        <option value="<?= $status_key ?>" <?= ($order['tracking_status'] == $status_key) ? 'selected' : '' ?>>
+                                            <?= $status_name ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button class="btn btn-sm btn-warning">Изменить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
