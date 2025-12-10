@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1
--- Время создания: Дек 04 2025 г., 01:53
+-- Время создания: Дек 10 2025 г., 21:38
 -- Версия сервера: 10.4.32-MariaDB
 -- Версия PHP: 8.2.12
 
@@ -120,19 +120,7 @@ CREATE TABLE `orders` (
   `cost` decimal(10,2) DEFAULT NULL,
   `delivery_hours` decimal(8,2) DEFAULT NULL,
   `track_number` varchar(20) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp(),
-  `full_name` varchar(255) DEFAULT NULL,
-  `home_address` text DEFAULT NULL,
-  `pickup_city` varchar(100) DEFAULT NULL,
-  `pickup_address` text DEFAULT NULL,
-  `delivery_city` varchar(100) DEFAULT NULL,
-  `delivery_address` text DEFAULT NULL,
-  `desired_date` date DEFAULT NULL,
-  `insurance` tinyint(1) DEFAULT 0,
-  `packaging` tinyint(1) DEFAULT 0,
-  `fragile` tinyint(1) DEFAULT 0,
-  `payment_method` varchar(50) DEFAULT 'cash',
-  `comment` text DEFAULT NULL
+  `created_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -140,7 +128,15 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `user_id`, `carrier_id`, `from_office`, `to_office`, `weight`, `cost`, `delivery_hours`, `track_number`, `created_at`) VALUES
-(1, 2, 4, 23, 22, 30.000, 49.28, 1.60, '7493FC43F2BC', '2025-12-04 03:43:01');
+(1, 2, 4, 23, 22, 30.000, 49.28, 1.60, '7493FC43F2BC', '2025-12-04 03:43:01'),
+(2, 1, 1, 8, 3, 1.000, 8.60, 8.00, '3E93445DFB40', '2025-12-10 21:10:10'),
+(3, 1, 2, 11, 13, 1.000, 19.12, 5.50, '14DA538AF5EC', '2025-12-10 21:10:14'),
+(4, 1, 2, 11, 13, 1.000, 19.12, 5.50, '614C04987B6D', '2025-12-10 21:22:43'),
+(5, 1, 2, 11, 13, 1.000, 19.12, 5.50, '793FA52FC4C1', '2025-12-10 21:22:45'),
+(6, 2, 3, 18, 17, 20.000, 34.68, 6.40, 'BE1E0039F0E1', '2025-12-10 23:06:46'),
+(7, 2, 5, 26, 29, 15.000, 37.69, 8.70, '28BD4368DF28', '2025-12-10 23:07:14'),
+(8, 1, 2, 12, 11, 25.000, 34.89, 3.40, 'F3F6FDC39031', '2025-12-10 23:37:25'),
+(9, 1, 5, 28, 27, 1.000, 16.12, 3.90, 'A05B842C6F32', '2025-12-10 23:37:30');
 
 -- --------------------------------------------------------
 
@@ -392,7 +388,7 @@ ALTER TABLE `offices`
 -- AUTO_INCREMENT для таблицы `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT для таблицы `users`
