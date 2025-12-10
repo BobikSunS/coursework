@@ -256,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-body text-center">
             <h2><?= $result['cost'] ?> BYN</h2>
             <p class="lead">Время доставки: <?= formatDeliveryTime($result['hours']) ?> (<?= round($result['distance']) ?> км)</p>
-            <a href="order_form.php?carrier=<?= $result['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $result['cost'] ?>" class="btn btn-success btn-lg">
+            <a href="order_form.php?carrier=<?= $result['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $result['cost'] ?>&from=<?= $_POST['from'] ?>&to=<?= $_POST['to'] ?>" class="btn btn-success btn-lg">
                 Оформить заказ
             </a>
         </div>
@@ -366,7 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <td>~<?= formatDeliveryTime($res['hours']) ?></td>
                             <td><?= round($res['distance']) ?> км</td>
                             <td>
-                                <a href="order_form.php?carrier=<?= $res['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $res['cost'] ?>" 
+                                <a href="order_form.php?carrier=<?= $res['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $res['cost'] ?>&from=<?= $_POST['from'] ?>&to=<?= $_POST['to'] ?>" 
                                    class="btn btn-sm btn-success">Оформить</a>
                             </td>
                         </tr>
@@ -408,6 +408,7 @@ function selectCarrier(id, name) {
     document.getElementById('carrier-name').textContent = name;
     document.getElementById('calc-form').style.display = 'block';
 
+    // Load offices with search functionality
     fetch('get_offices.php?carrier=' + id)
         .then(r => r.json())
         .then(data => {
@@ -418,6 +419,59 @@ function selectCarrier(id, name) {
             });
         });
 }
+
+// Add search functionality to select elements
+function addSearchToSelect(selectElement) {
+    // Create a wrapper div for the custom select
+    const wrapper = document.createElement('div');
+    wrapper.className = 'custom-select-wrapper';
+    wrapper.style.position = 'relative';
+    
+    // Create input for search
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'form-control';
+    searchInput.placeholder = 'Поиск...';
+    searchInput.style.marginBottom = '5px';
+    
+    // Replace the select with the wrapper
+    selectElement.parentNode.insertBefore(wrapper, selectElement);
+    wrapper.appendChild(searchInput);
+    wrapper.appendChild(selectElement);
+    
+    // Hide the original select and style it as a dropdown
+    selectElement.style.position = 'absolute';
+    selectElement.style.top = '40px';
+    selectElement.style.left = '0';
+    selectElement.style.width = '100%';
+    selectElement.style.zIndex = '1000';
+    selectElement.size = 8; // Show multiple options
+    
+    // Add search event
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const options = selectElement.options;
+        
+        for (let i = 0; i < options.length; i++) {
+            const optionText = options[i].text.toLowerCase();
+            if (optionText.includes(searchTerm) || searchTerm === '') {
+                options[i].style.display = '';
+            } else {
+                options[i].style.display = 'none';
+            }
+        }
+    });
+}
+
+// Initialize search for select elements when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add search functionality to existing selects
+    const fromSelect = document.querySelector('select[name="from"]');
+    const toSelect = document.querySelector('select[name="to"]');
+    
+    if (fromSelect) addSearchToSelect(fromSelect);
+    if (toSelect) addSearchToSelect(toSelect);
+});
 
 function toggleFields(type) {
     const isLetter = type === 'letter';

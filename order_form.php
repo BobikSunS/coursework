@@ -8,18 +8,34 @@ $carriers = $db->query("SELECT * FROM carriers ORDER BY name")->fetchAll();
 $preselected_carrier = isset($_GET['carrier']) ? (int)$_GET['carrier'] : 0;
 $preselected_weight = isset($_GET['weight']) ? floatval($_GET['weight']) : 0;
 $preselected_cost = isset($_GET['cost']) ? floatval($_GET['cost']) : 0;
+$preselected_from_office = isset($_GET['from']) ? (int)$_GET['from'] : 0;
+$preselected_to_office = isset($_GET['to']) ? (int)$_GET['to'] : 0;
+
+// Получаем информацию об офисах если они были переданы
+$from_office_info = null;
+$to_office_info = null;
+
+if ($preselected_from_office > 0) {
+    $stmt = $db->prepare("SELECT o.*, c.name as carrier_name FROM offices o LEFT JOIN carriers c ON o.carrier_id = c.id WHERE o.id = ?");
+    $stmt->execute([$preselected_from_office]);
+    $from_office_info = $stmt->fetch();
+}
+
+if ($preselected_to_office > 0) {
+    $stmt = $db->prepare("SELECT o.*, c.name as carrier_name FROM offices o LEFT JOIN carriers c ON o.carrier_id = c.id WHERE o.id = ?");
+    $stmt->execute([$preselected_to_office]);
+    $to_office_info = $stmt->fetch();
+}
 
 // Обработка POST запроса для создания заказа
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Валидация и очистка данных
     $full_name = trim($_POST['full_name'] ?? '');
     $home_address = trim($_POST['home_address'] ?? '');
-    $pickup_city = trim($_POST['pickup_city'] ?? '');
-    $pickup_address = trim($_POST['pickup_address'] ?? '');
-    $delivery_city = trim($_POST['delivery_city'] ?? '');
-    $delivery_address = trim($_POST['delivery_address'] ?? '');
     $weight = floatval($_POST['weight'] ?? 0);
     $carrier_id = intval($_POST['carrier'] ?? 0);
+    $from_office = intval($_POST['from_office'] ?? 0);
+    $to_office = intval($_POST['to_office'] ?? 0);
     $desired_date = trim($_POST['desired_date'] ?? '');
     $insurance = isset($_POST['insurance']);
     $packaging = isset($_POST['packaging']);
@@ -28,8 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $comment = trim($_POST['comment'] ?? '');
 
     // Валидация обязательных полей
-    if (empty($full_name) || empty($home_address) || empty($pickup_city) || empty($pickup_address) || 
-        empty($delivery_city) || empty($delivery_address) || $weight <= 0 || $carrier_id <= 0) {
+    if (empty($full_name) || empty($home_address) || $weight <= 0 || $carrier_id <= 0 || $from_office <= 0 || $to_office <= 0) {
         $error = "Пожалуйста, заполните все обязательные поля!";
     } else {
         try {
@@ -39,33 +54,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Неверный перевозчик");
             }
 
-            // Вычисляем стоимость и время доставки (упрощенная логика)
-            $cost = $carrier['base_cost'] + $weight * $carrier['cost_per_kg'];
-            
-            // Если выбрана страховка, добавляем 2%
-            if ($insurance) {
-                $cost *= 1.02;
+            // Используем переданную стоимость из калькулятора, если она есть
+            $cost = floatval($_POST['cost'] ?? 0);
+            if ($cost <= 0) {
+                // Если стоимость не передана, вычисляем её
+                $cost = $carrier['base_cost'] + $weight * $carrier['cost_per_kg'];
+                
+                // Если выбрана страховка, добавляем 2%
+                if ($insurance) {
+                    $cost *= 1.02;
+                }
+                
+                // Если выбрана упаковка, добавляем фиксированную стоимость
+                if ($packaging) {
+                    $cost += 5.00;
+                }
+                
+                // Если хрупкая посылка, добавляем 1%
+                if ($fragile) {
+                    $cost *= 1.01;
+                }
+                
+                $cost = round($cost, 2);
             }
-            
-            // Если выбрана упаковка, добавляем фиксированную стоимость
-            if ($packaging) {
-                $cost += 5.00;
-            }
-            
-            // Если хрупкая посылка, добавляем 1%
-            if ($fragile) {
-                $cost *= 1.01;
-            }
-            
-            $cost = round($cost, 2);
 
             // Генерируем трек-номер
             $track = strtoupper(substr(md5(uniqid()), 0, 12));
 
             // Вставляем заказ в базу данных
-            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, from_office, to_office, weight, cost, track_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->execute([
-                $user['id'], $carrier_id, $weight, $cost, $track
+                $user['id'], $carrier_id, $from_office, $to_office, $weight, $cost, $track
             ]);
 
             $success = true;
@@ -190,6 +209,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php if($preselected_cost > 0): ?>
                             , расчетная стоимость: <?= number_format($preselected_cost, 2) ?> BYN
                         <?php endif; ?>
+                        <?php if($from_office_info && $to_office_info): ?>
+                            <br><strong>Маршрут:</strong> <?= htmlspecialchars($from_office_info['city']) ?> — <?= htmlspecialchars($to_office_info['city']) ?>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
                 
@@ -198,6 +220,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <form method="POST">
+                    <!-- Скрытое поле для передачи стоимости из калькулятора -->
+                    <input type="hidden" name="cost" value="<?= $preselected_cost ?>">
+                    
                     <!-- Личные данные -->
                     <div class="form-section">
                         <h4 class="section-title">Личные данные</h4>
@@ -220,50 +245,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
 
-                    <!-- Адрес получения посылки (отправитель) -->
+                    <!-- Выбор офисов -->
                     <div class="form-section">
-                        <h4 class="section-title">Адрес получения посылки (отправитель)</h4>
+                        <h4 class="section-title">Информация о доставке</h4>
                         
                         <div class="info-box">
-                            <strong>Важно:</strong> Это адрес, откуда курьер заберет посылку для отправки.
+                            <strong>Важно:</strong> Офисы получения и доставки посылки были переданы из калькулятора.
                         </div>
+                        
+                        <!-- Скрытое поле для from_office -->
+                        <input type="hidden" name="from_office" id="selected-from-office" value="<?= $preselected_from_office ?>">
+                        
+                        <!-- Скрытое поле для to_office -->
+                        <input type="hidden" name="to_office" id="selected-to-office" value="<?= $preselected_to_office ?>">
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Город получения <span class="text-danger">*</span></label>
-                                <input type="text" name="pickup_city" class="form-control" required 
-                                       placeholder="Например: Минск" 
-                                       value="<?= htmlspecialchars($_POST['pickup_city'] ?? '') ?>">
+                                <label class="form-label fw-bold">Офис получения</label>
+                                <input type="text" class="form-control" value="<?= $from_office_info ? htmlspecialchars($from_office_info['city']) . ' — ' . htmlspecialchars($from_office_info['address']) : 'Не выбран' ?>" readonly>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Адрес получения <span class="text-danger">*</span></label>
-                                <input type="text" name="pickup_address" class="form-control" required 
-                                       placeholder="Улица, дом, офис" 
-                                       value="<?= htmlspecialchars($_POST['pickup_address'] ?? '') ?>">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Адрес доставки (получатель) -->
-                    <div class="form-section">
-                        <h4 class="section-title">Адрес доставки (получатель)</h4>
-                        
-                        <div class="info-box">
-                            <strong>Важно:</strong> Это конечный адрес, куда будет доставлена посылка.
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Город доставки <span class="text-danger">*</span></label>
-                                <input type="text" name="delivery_city" class="form-control" required 
-                                       placeholder="Например: Гомель" 
-                                       value="<?= htmlspecialchars($_POST['delivery_city'] ?? '') ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Адрес доставки <span class="text-danger">*</span></label>
-                                <input type="text" name="delivery_address" class="form-control" required 
-                                       placeholder="Улица, дом, квартира" 
-                                       value="<?= htmlspecialchars($_POST['delivery_address'] ?? '') ?>">
+                                <label class="form-label fw-bold">Офис доставки</label>
+                                <input type="text" class="form-control" value="<?= $to_office_info ? htmlspecialchars($to_office_info['city']) . ' — ' . htmlspecialchars($to_office_info['address']) : 'Не выбран' ?>" readonly>
                             </div>
                         </div>
                     </div>

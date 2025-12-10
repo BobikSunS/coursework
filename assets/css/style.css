@@ -88,8 +88,8 @@ body.dark .form-select {
 }
 
 body.dark .footer {
-    background-color: rgba(0,0,0,0.2) !important;
-    color: #adb5bd !important;
+    background-color: var(--footer-bg-dark) !important;
+    color: #ffffff !important; /* White text for better contrast in dark mode */
 }
 
 @media (max-width: 768px) {
