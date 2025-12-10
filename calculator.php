@@ -421,7 +421,7 @@ function selectCarrier(id, name) {
         });
 }
 
-// Add search functionality to select elements
+// Add search functionality to select elements with collapsible dropdown
 function addSearchToSelect(selectElement) {
     // Create a wrapper div for the custom select
     const wrapper = document.createElement('div');
@@ -434,32 +434,103 @@ function addSearchToSelect(selectElement) {
     searchInput.className = 'form-control';
     searchInput.placeholder = 'Поиск...';
     searchInput.style.marginBottom = '5px';
+    searchInput.style.cursor = 'pointer';
+    searchInput.readOnly = true; // Make it read-only so it doesn't interfere with selection
+    
+    // Create a dropdown container that's initially hidden
+    const dropdownContainer = document.createElement('div');
+    dropdownContainer.style.position = 'absolute';
+    dropdownContainer.style.top = '40px';
+    dropdownContainer.style.left = '0';
+    dropdownContainer.style.width = '100%';
+    dropdownContainer.style.zIndex = '1000';
+    dropdownContainer.style.backgroundColor = 'white';
+    dropdownContainer.style.border = '1px solid #ced4da';
+    dropdownContainer.style.borderRadius = '0.375rem';
+    dropdownContainer.style.maxHeight = '200px';
+    dropdownContainer.style.overflowY = 'auto';
+    dropdownContainer.style.display = 'none'; // Initially hidden
+    dropdownContainer.style.boxShadow = '0 0.5rem 1rem rgba(0,0,0,0.15)';
+    
+    // Add click event to toggle dropdown visibility
+    searchInput.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isHidden = dropdownContainer.style.display === 'none';
+        dropdownContainer.style.display = isHidden ? 'block' : 'none';
+        
+        // If showing, populate with all options
+        if (isHidden) {
+            updateDropdownOptions(selectElement, '');
+        }
+    });
+    
+    // Populate dropdown with options
+    function updateDropdownOptions(originalSelect, searchTerm = '') {
+        dropdownContainer.innerHTML = '';
+        const options = Array.from(originalSelect.options);
+        
+        options.forEach(option => {
+            if (option.value === '') return; // Skip empty option
+            
+            const optionText = option.text.toLowerCase();
+            if (searchTerm === '' || optionText.includes(searchTerm.toLowerCase())) {
+                const optionElement = document.createElement('div');
+                optionElement.textContent = option.text;
+                optionElement.style.padding = '8px 12px';
+                optionElement.style.cursor = 'pointer';
+                optionElement.style.borderBottom = '1px solid #eee';
+                
+                optionElement.addEventListener('click', function() {
+                    originalSelect.value = option.value;
+                    searchInput.value = option.text;
+                    dropdownContainer.style.display = 'none';
+                    
+                    // Trigger change event on the original select
+                    originalSelect.dispatchEvent(new Event('change'));
+                });
+                
+                optionElement.addEventListener('mouseover', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                
+                optionElement.addEventListener('mouseout', function() {
+                    this.style.backgroundColor = 'white';
+                });
+                
+                dropdownContainer.appendChild(optionElement);
+            }
+        });
+    }
+    
+    // Add search event
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value;
+        updateDropdownOptions(selectElement, searchTerm);
+        
+        // Show dropdown when searching
+        dropdownContainer.style.display = 'block';
+    });
     
     // Replace the select with the wrapper
     selectElement.parentNode.insertBefore(wrapper, selectElement);
     wrapper.appendChild(searchInput);
-    wrapper.appendChild(selectElement);
+    wrapper.appendChild(dropdownContainer);
     
-    // Hide the original select and style it as a dropdown
-    selectElement.style.position = 'absolute';
-    selectElement.style.top = '40px';
-    selectElement.style.left = '0';
-    selectElement.style.width = '100%';
-    selectElement.style.zIndex = '1000';
-    selectElement.size = 8; // Show multiple options
+    // Hide the original select
+    selectElement.style.display = 'none';
     
-    // Add search event
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const options = selectElement.options;
-        
-        for (let i = 0; i < options.length; i++) {
-            const optionText = options[i].text.toLowerCase();
-            if (optionText.includes(searchTerm) || searchTerm === '') {
-                options[i].style.display = '';
-            } else {
-                options[i].style.display = 'none';
-            }
+    // Initialize with the currently selected value
+    if (selectElement.value) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        if (selectedOption) {
+            searchInput.value = selectedOption.text;
+        }
+    }
+    
+    // Add global click listener to close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+            dropdownContainer.style.display = 'none';
         }
     });
 }
