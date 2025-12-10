@@ -13,10 +13,13 @@ $user = $_SESSION['user'];
 <body>
 <nav class="navbar navbar-dark bg-primary shadow-lg">
     <div class="container-fluid">
-        <a class="navbar-brand">Расчёт доставки</a>
+        <a class="navbar-brand">Профиль пользователя</a>
         <div>
-            <a href="calculator.php" class="btn btn-light me-2">К калькулятору</a>
-            <a href="logout.php" class="btn btn-danger">Выйти</a>
+            <a href="calculator.php" class="btn btn-light me-2">Калькулятор</a>
+            <a href="order_form.php" class="btn btn-success me-2">Оформить заказ</a>
+            <a href="history.php" class="btn btn-warning me-2">История</a>
+            <?php if($user['role']==='admin'): ?><a href="admin/index.php" class="btn btn-danger me-2">Админка</a><?php endif; ?>
+            <a href="logout.php" class="btn btn-outline-light">Выйти</a>
         </div>
     </div>
 </nav>
@@ -28,7 +31,11 @@ $user = $_SESSION['user'];
                     <h2>Привет, <?= htmlspecialchars($user['name'] ?: $user['login']) ?>!</h2>
                     <p class="lead">Роль: <strong><?= $user['role']==='admin'?'Администратор':'Пользователь' ?></strong></p>
                     <hr>
-                    <a href="calculator.php" class="btn btn-primary btn-lg">Рассчитать доставку</a>
+                    <div class="d-grid gap-3">
+                        <a href="calculator.php" class="btn btn-primary btn-lg">Рассчитать доставку</a>
+                        <a href="order_form.php" class="btn btn-success btn-lg">Оформить заказ</a>
+                        <a href="history.php" class="btn btn-info btn-lg">История заказов</a>
+                    </div>
                     <div class="mt-4">
                         <button onclick="document.body.classList.toggle('dark')" class="btn btn-outline-warning btn-lg">
                             Тёмная тема
