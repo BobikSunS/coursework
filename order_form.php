@@ -63,8 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $track = strtoupper(substr(md5(uniqid()), 0, 12));
 
             // Вставляем заказ в базу данных
-            // First, check if the required columns exist
-            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at, tracking_status) VALUES (?, ?, ?, ?, ?, NOW(), 'created')");
+            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
             $stmt->execute([
                 $user['id'], $carrier_id, $weight, $cost, $track
             ]);
@@ -377,5 +376,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Apply saved theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+    
+    // Set up a global theme listener for cross-page consistency
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'theme') {
+            if (e.newValue === 'dark') {
+                document.body.classList.add('dark');
+            } else {
+                document.body.classList.remove('dark');
+            }
+        }
+    });
+});
+</script>
 </body>
 </html>
