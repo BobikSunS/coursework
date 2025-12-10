@@ -134,6 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Почтовый калькулятор</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-dark bg-primary shadow-lg">
@@ -175,13 +176,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label>Откуда</label>
-                        <select name="from" class="form-select" required onchange="document.getElementById('selected-from').value = this.value;">
+                        <select name="from" id="from-select" class="form-select" required onchange="document.getElementById('selected-from').value = this.value;">
                             <option value="">Выберите</option>
                             <?php 
                             $carrier_id = $_POST['carrier'] ?? $_GET['carrier'] ?? null;
                             if ($carrier_id) {
                                 $carrier_id = (int)$carrier_id;
-                                $offices = $db->query("SELECT * FROM offices WHERE carrier_id = $carrier_id")->fetchAll();
+                                $offices = $db->query("SELECT * FROM offices WHERE carrier_id = $carrier_id ORDER BY city, address")->fetchAll();
                                 foreach($offices as $o): 
                             ?>
                                 <option value="<?= $o['id'] ?>" <?= (($_POST['from'] ?? $_GET['from'] ?? '') == $o['id']) ? 'selected' : '' ?>><?= htmlspecialchars($o['city']) ?> — <?= htmlspecialchars($o['address']) ?></option>
@@ -190,12 +191,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <div class="col-md-6">
                         <label>Куда</label>
-                        <select name="to" class="form-select" required onchange="document.getElementById('selected-to').value = this.value;">
+                        <select name="to" id="to-select" class="form-select" required onchange="document.getElementById('selected-to').value = this.value;">
                             <option value="">Выберите</option>
                             <?php 
                             if ($carrier_id) {
                                 $carrier_id = (int)$carrier_id;
-                                $offices = $db->query("SELECT * FROM offices WHERE carrier_id = $carrier_id")->fetchAll();
+                                $offices = $db->query("SELECT * FROM offices WHERE carrier_id = $carrier_id ORDER BY city, address")->fetchAll();
                                 foreach($offices as $o): 
                             ?>
                                 <option value="<?= $o['id'] ?>" <?= (($_POST['to'] ?? $_GET['to'] ?? '') == $o['id']) ? 'selected' : '' ?>><?= htmlspecialchars($o['city']) ?> — <?= htmlspecialchars($o['address']) ?></option>
