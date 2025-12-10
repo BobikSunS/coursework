@@ -385,50 +385,6 @@ $status_options = [
             </div>
         </div>
 
-        <!-- Статистика по статусам заказов -->
-        <div class="col-lg-5 mb-4">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5>Статистика по статусам заказов</h5>
-                </div>
-                <div class="card-body">
-                    <?php
-                    // Get order counts by status
-                    try {
-                        $status_stats = $db->query("
-                            SELECT 
-                                tracking_status,
-                                COUNT(*) as count
-                            FROM orders 
-                            GROUP BY tracking_status
-                            ORDER BY count DESC
-                        ")->fetchAll();
-                    } catch (PDOException $e) {
-                        // If tracking_status column doesn't exist, show a message
-                        $status_stats = [];
-                    }
-                    ?>
-                    <ol class="list-group list-group-numbered">
-                        <?php if (empty($status_stats)): ?>
-                            <li class="list-group-item text-center">
-                                <em>Статусы заказов недоступны. Таблица может не содержать столбец 'tracking_status'.</em>
-                            </li>
-                        <?php else: ?>
-                            <?php foreach($status_stats as $stat): ?>
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>
-                                    <?= htmlspecialchars($status_options[$stat['tracking_status']] ?? $stat['tracking_status']) ?>
-                                </span>
-                                <span class="badge bg-primary rounded-pill"><?= $stat['count'] ?></span>
-                            </li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Управление статусами заказов -->
     <div class="card mb-4">
         <div class="card-header bg-warning text-dark">
