@@ -71,6 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = true;
             $track_number = $track;
             $total_cost = $cost;
+            
+            // Redirect to payment page after successful order creation
+            $order_id = $db->lastInsertId();
+            header("Location: payment.php?order_id=$order_id");
+            exit;
 
         } catch (Exception $e) {
             $error = "Ошибка при создании заказа: " . $e->getMessage();
@@ -155,10 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (isset($success)): ?>
                 <!-- Успешное создание заказа -->
                 <div class="card bg-success text-white text-center p-5 mb-5">
-                    <h2>Заказ успешно оформлен!</h2>
-                    <p class="lead">Ваш заказ №<?= htmlspecialchars($track_number) ?> принят в обработку</p>
+                    <h2 class="text-white">Заказ успешно оформлен!</h2>
+                    <p class="lead text-white">Ваш заказ №<?= htmlspecialchars($track_number) ?> принят в обработку</p>
                     <h3 class="text-warning"><?= number_format($total_cost, 2) ?> BYN</h3>
-                    <p>Спасибо за доверие к нашей службе доставки!</p>
+                    <p class="text-white">Спасибо за доверие к нашей службе доставки!</p>
                     <a href="history.php" class="btn btn-light btn-lg mt-3">Перейти в историю заказов</a>
                 </div>
             <?php else: ?>

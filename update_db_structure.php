@@ -16,7 +16,8 @@ try {
         'fragile TINYINT(1) DEFAULT 0',
         'payment_method VARCHAR(50) DEFAULT \'cash\'',
         'comment TEXT DEFAULT NULL',
-        'tracking_status VARCHAR(50) DEFAULT \'created\''
+        'tracking_status VARCHAR(50) DEFAULT \'created\'',
+        'payment_status VARCHAR(20) DEFAULT \'pending\''
     ];
 
     foreach ($columns_to_add as $column) {
