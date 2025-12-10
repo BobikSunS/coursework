@@ -1,0 +1,32 @@
+```php
+# Compiled and build artifacts
+*.php~
+*.php.bak
+*.sql~
+
+# Dependencies
+vendor/
+composer.lock
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup and swap files
+*~
+*.bak
+*.backup
+```

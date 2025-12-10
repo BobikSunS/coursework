@@ -120,7 +120,19 @@ CREATE TABLE `orders` (
   `cost` decimal(10,2) DEFAULT NULL,
   `delivery_hours` decimal(8,2) DEFAULT NULL,
   `track_number` varchar(20) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  `full_name` varchar(255) DEFAULT NULL,
+  `home_address` text DEFAULT NULL,
+  `pickup_city` varchar(100) DEFAULT NULL,
+  `pickup_address` text DEFAULT NULL,
+  `delivery_city` varchar(100) DEFAULT NULL,
+  `delivery_address` text DEFAULT NULL,
+  `desired_date` date DEFAULT NULL,
+  `insurance` tinyint(1) DEFAULT 0,
+  `packaging` tinyint(1) DEFAULT 0,
+  `fragile` tinyint(1) DEFAULT 0,
+  `payment_method` varchar(50) DEFAULT 'cash',
+  `comment` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

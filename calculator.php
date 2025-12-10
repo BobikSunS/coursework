@@ -126,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a class="navbar-brand">Почтовый калькулятор</a>
         <div>
             <a href="profile.php" class="btn btn-light me-2">Профиль</a>
+            <a href="order_form.php" class="btn btn-success me-2">Оформить заказ</a>
             <a href="history.php" class="btn btn-warning me-2">История</a>
             <?php if($user['role']==='admin'): ?><a href="admin/index.php" class="btn btn-danger me-2">Админка</a><?php endif; ?>
             <a href="logout.php" class="btn btn-outline-light">Выйти</a>
@@ -226,6 +227,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </a>
             <a href="track.php?track=<?= $result['track'] ?>" target="_blank" class="btn btn-primary btn-lg ms-3">
                 Отследить посылку
+            </a>
+            <a href="order_form.php?carrier=<?= $result['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $result['cost'] ?>" class="btn btn-success btn-lg ms-3">
+                Оформить заказ
             </a>
         </div>
     </div>
