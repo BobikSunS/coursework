@@ -115,15 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cost = round($cost, 2);
                 $hours = round($base_hours, 1);
 
-                $track = strtoupper(substr(md5(uniqid()), 0, 12));
-                $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, from_office, to_office, weight, cost, delivery_hours, track_number) VALUES (?,?,?,?,?,?,?,?)");
-                $stmt->execute([$user['id'], $carrier_id, $from, $to, $weight, $cost, $hours, $track]);
-
                 $result = [
                     'carrier' => $carrier,
                     'cost' => $cost,
                     'hours' => $hours,
-                    'track' => $track,
                     'distance' => $distance
                 ];
             }
@@ -261,17 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-body text-center">
             <h2><?= $result['cost'] ?> BYN</h2>
             <p class="lead">Время доставки: <?= formatDeliveryTime($result['hours']) ?> (<?= round($result['distance']) ?> км)</p>
-            <p><strong>Трек-номер:</strong> 
-                <span class="badge bg-danger fs-5"><?= $result['track'] ?></span>
-                <button onclick="navigator.clipboard.writeText('<?= $result['track'] ?>')" class="btn btn-sm btn-outline-light ms-2">Копировать</button>
-            </p>
-            <a href="generate_pdf.php?track=<?= $result['track'] ?>" target="_blank" class="btn btn-danger btn-lg">
-                Скачать квитанцию (PDF)
-            </a>
-            <a href="track.php?track=<?= $result['track'] ?>" target="_blank" class="btn btn-primary btn-lg ms-3">
-                Отследить посылку
-            </a>
-            <a href="order_form.php?carrier=<?= $result['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $result['cost'] ?>" class="btn btn-success btn-lg ms-3">
+            <a href="order_form.php?carrier=<?= $result['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $result['cost'] ?>" class="btn btn-success btn-lg">
                 Оформить заказ
             </a>
         </div>
@@ -478,6 +463,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Prevent scrolling to top when filter links are clicked
+    const filterLinks = document.querySelectorAll('.btn-group a');
+    filterLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Allow the navigation but prevent the default scroll behavior
+            // We'll maintain the scroll position by saving it before navigation
+            sessionStorage.setItem('scrollPosition', window.scrollY);
+        });
+    });
+    
+    // Restore scroll position if available
+    const scrollPosition = sessionStorage.getItem('scrollPosition');
+    if (scrollPosition) {
+        window.scrollTo(0, parseInt(scrollPosition));
+        sessionStorage.removeItem('scrollPosition');
+    }
 });
 </script>
 </body>

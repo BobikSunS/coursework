@@ -75,6 +75,18 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_status') {
     }
 }
 
+// Обработка добавления нового отделения
+if (isset($_POST['action']) && $_POST['action'] === 'add_office') {
+    $carrier_id = (int)($_POST['carrier_id'] ?? 0);
+    $city = trim($_POST['city'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    
+    if ($carrier_id > 0 && !empty($city) && !empty($address)) {
+        $stmt = $db->prepare("INSERT INTO offices (carrier_id, city, address) VALUES (?, ?, ?)");
+        $stmt->execute([$carrier_id, $city, $address]);
+    }
+}
+
 // Статистика
 $total_orders = $db->query("SELECT COUNT(*) FROM orders")->fetchColumn();
 $total_revenue = $db->query("SELECT SUM(cost) FROM orders")->fetchColumn() ?: 0;
@@ -242,7 +254,7 @@ $status_options = [
                 </div>
             </div>
             
-            <!-- Добавление нового оператора -->
+    <!-- Добавление нового оператора -->
             <div class="card mt-4">
                 <div class="card-header bg-info text-white">
                     <h4>Добавить нового оператора</h4>
@@ -285,6 +297,38 @@ $status_options = [
                             </div>
                         </div>
                         <button type="submit" class="btn btn-info btn-lg w-100">Добавить оператора</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Добавление нового отделения -->
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h4>Добавить новое отделение</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        <input type="hidden" name="action" value="add_office">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Оператор</label>
+                                <select name="carrier_id" class="form-select" required>
+                                    <option value="">Выберите оператора</option>
+                                    <?php foreach($carriers as $c): ?>
+                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Город</label>
+                                <input type="text" name="city" class="form-control" placeholder="Например: Минск" required>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Адрес</label>
+                                <input type="text" name="address" class="form-control" placeholder="Полный адрес отделения" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100">Добавить отделение</button>
                     </form>
                 </div>
             </div>
