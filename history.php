@@ -69,42 +69,42 @@ $orders->execute([$user['id']]);
                         </td>
                         <td><?= date('d.m.Y H:i', strtotime($o['created_at'])) ?></td>
                     </tr>
-                    <?php if($o['full_name'] || $o['pickup_city'] || $o['delivery_city']): ?>
+                    <?php if(isset($o['full_name']) && $o['full_name'] || isset($o['pickup_city']) && $o['pickup_city'] || isset($o['delivery_city']) && $o['delivery_city']): ?>
                     <tr>
                         <td colspan="6">
                             <div class="order-details">
                                 <div class="row">
-                                    <?php if($o['full_name']): ?>
+                                    <?php if(isset($o['full_name']) && $o['full_name']): ?>
                                     <div class="col-md-6">
                                         <div class="detail-row"><strong>ФИО:</strong> <?= htmlspecialchars($o['full_name']) ?></div>
                                     </div>
                                     <?php endif; ?>
-                                    <?php if($o['home_address']): ?>
+                                    <?php if(isset($o['home_address']) && $o['home_address']): ?>
                                     <div class="col-md-6">
                                         <div class="detail-row"><strong>Домашний адрес:</strong> <?= htmlspecialchars($o['home_address']) ?></div>
                                     </div>
                                     <?php endif; ?>
-                                    <?php if($o['pickup_city'] && $o['pickup_address']): ?>
+                                    <?php if(isset($o['pickup_city']) && $o['pickup_city'] && isset($o['pickup_address']) && $o['pickup_address']): ?>
                                     <div class="col-md-6">
                                         <div class="detail-row"><strong>Адрес получения:</strong> <?= htmlspecialchars($o['pickup_city']) ?>, <?= htmlspecialchars($o['pickup_address']) ?></div>
                                     </div>
                                     <?php endif; ?>
-                                    <?php if($o['delivery_city'] && $o['delivery_address']): ?>
+                                    <?php if(isset($o['delivery_city']) && $o['delivery_city'] && isset($o['delivery_address']) && $o['delivery_address']): ?>
                                     <div class="col-md-6">
                                         <div class="detail-row"><strong>Адрес доставки:</strong> <?= htmlspecialchars($o['delivery_city']) ?>, <?= htmlspecialchars($o['delivery_address']) ?></div>
                                     </div>
                                     <?php endif; ?>
-                                    <?php if($o['insurance'] || $o['packaging'] || $o['fragile']): ?>
+                                    <?php if(isset($o['insurance']) && $o['insurance'] || isset($o['packaging']) && $o['packaging'] || isset($o['fragile']) && $o['fragile']): ?>
                                     <div class="col-md-12">
                                         <div class="detail-row">
                                             <strong>Дополнительно:</strong> 
-                                            <?php if($o['insurance']): ?><span class="badge bg-warning me-1">Страховка</span><?php endif; ?>
-                                            <?php if($o['packaging']): ?><span class="badge bg-info me-1">Упаковка</span><?php endif; ?>
-                                            <?php if($o['fragile']): ?><span class="badge bg-danger me-1">Хрупкое</span><?php endif; ?>
+                                            <?php if(isset($o['insurance']) && $o['insurance']): ?><span class="badge bg-warning me-1">Страховка</span><?php endif; ?>
+                                            <?php if(isset($o['packaging']) && $o['packaging']): ?><span class="badge bg-info me-1">Упаковка</span><?php endif; ?>
+                                            <?php if(isset($o['fragile']) && $o['fragile']): ?><span class="badge bg-danger me-1">Хрупкое</span><?php endif; ?>
                                         </div>
                                     </div>
                                     <?php endif; ?>
-                                    <?php if($o['comment']): ?>
+                                    <?php if(isset($o['comment']) && $o['comment']): ?>
                                     <div class="col-md-12">
                                         <div class="detail-row"><strong>Комментарий:</strong> <?= htmlspecialchars($o['comment']) ?></div>
                                     </div>
@@ -120,5 +120,16 @@ $orders->execute([$user['id']]);
         </div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer class="footer mt-5 py-4 bg-light border-top">
+    <div class="container text-center">
+        <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
+        <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
+        <p class="mb-0">Email: info@delivery.by</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

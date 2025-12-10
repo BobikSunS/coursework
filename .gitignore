@@ -1,32 +1,59 @@
 ```php
-# Compiled and build artifacts
+# PHP compiled files
 *.php~
-*.php.bak
-*.sql~
-
-# Dependencies
-vendor/
-composer.lock
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
-*.swo
 
-# Environment
+# Environment files
 .env
 .env.local
 *.env.*
 
-# Editors
+# Editor/IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Backup and swap files
-*~
-*.bak
-*.backup
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Cache directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build/dist directories
+dist/
+build/
+target/
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```

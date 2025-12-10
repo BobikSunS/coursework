@@ -15,7 +15,8 @@ try {
         'packaging TINYINT(1) DEFAULT 0',
         'fragile TINYINT(1) DEFAULT 0',
         'payment_method VARCHAR(50) DEFAULT \'cash\'',
-        'comment TEXT DEFAULT NULL'
+        'comment TEXT DEFAULT NULL',
+        'tracking_status VARCHAR(50) DEFAULT \'created\''
     ];
 
     foreach ($columns_to_add as $column) {

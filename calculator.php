@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
 <body>
-<nav class="navbar navbar-dark bg-primary shadow-lg">
+<nav class="navbar navbar-dark bg-primary shadow-lg fixed-top">
     <div class="container-fluid">
         <a class="navbar-brand">Почтовый калькулятор</a>
         <div>
@@ -133,6 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </nav>
+
+<!-- Spacer to prevent content from being hidden behind fixed navbar -->
+<div style="height: 80px;"></div>
 
 <div class="container mt-5">
     <h2 class="text-center text-white mb-4">Выберите оператора</h2>
@@ -235,10 +238,137 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <?php endif; ?>
 
+    <?php 
+    // Get all calculation results for comparison if form was submitted
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
+        // Fetch all carrier options for the same route
+        $from = (int)$_POST['from'];
+        $to = (int)$_POST['to'];
+        
+        $all_results = [];
+        foreach($carriers as $c) {
+            $pathData = dijkstra($graph, $from, $to);
+            if ($pathData) {
+                $distance = $pathData['distance'];
+                $base_hours = $distance / $c['speed_kmh'];
+
+                $type = $_POST['package_type'];
+                $gabarit = $_POST['gabarit'] ?? 'small';
+                $speed = $_POST['delivery_speed'] ?? 'standard';
+                $insurance = isset($_POST['insurance']);
+
+                $volume_weight = 0;
+                if ($type === 'parcel') {
+                    if ($gabarit === 'medium') $volume_weight = 8;
+                    if ($gabarit === 'large') $volume_weight = 20;
+                }
+
+                $weight = $type === 'letter' 
+                    ? 0.02 * (int)($_POST['letter_count'] ?? 1)
+                    : max((float)$_POST['weight'], $volume_weight);
+
+                $max_weight = $c['max_weight'];
+                if ($gabarit === 'medium') $max_weight += 8;
+                if ($gabarit === 'large') $max_weight += 20;
+
+                if ($weight <= $max_weight) {
+                    $cost = $c['base_cost'] 
+                          + $weight * $c['cost_per_kg'] 
+                          + $distance * $c['cost_per_km'];
+
+                    if ($gabarit === 'medium') $cost += 6;
+                    if ($gabarit === 'large') $cost += 15;
+                    if ($speed === 'express') { $cost *= 1.25; $base_hours *= 0.7; }
+                    if ($insurance) $cost *= 1.02;
+                    if ($type === 'letter') $cost = max($cost, 2.5);
+
+                    $cost = round($cost, 2);
+                    $hours = round($base_hours, 1);
+
+                    $all_results[] = [
+                        'carrier' => $c,
+                        'cost' => $cost,
+                        'hours' => $hours,
+                        'distance' => $distance
+                    ];
+                }
+            }
+        }
+        
+        if (!empty($all_results)) {
+            // Sort by different criteria for filters
+            $cheapest = $all_results;
+            $fastest = $all_results;
+            
+            usort($cheapest, function($a, $b) { return $a['cost'] <=> $b['cost']; });
+            usort($fastest, function($a, $b) { return $a['hours'] <=> $b['hours']; });
+            
+            $filters = [
+                'all' => $all_results,
+                'cheapest' => $cheapest,
+                'fastest' => $fastest
+            ];
+            
+            $active_filter = $_GET['filter'] ?? 'all';
+            $results_to_show = $filters[$active_filter];
+    ?>
+    <div class="card mt-5 shadow-lg">
+        <div class="card-header bg-secondary text-white">
+            <h4>Сравнение операторов</h4>
+            <div class="btn-group" role="group">
+                <a href="?filter=all" class="btn btn-sm <?= $active_filter === 'all' ? 'btn-primary' : 'btn-outline-light' ?>">Все</a>
+                <a href="?filter=cheapest" class="btn btn-sm <?= $active_filter === 'cheapest' ? 'btn-success' : 'btn-outline-light' ?>">Самый дешевый</a>
+                <a href="?filter=fastest" class="btn btn-sm <?= $active_filter === 'fastest' ? 'btn-info' : 'btn-outline-light' ?>">Самый быстрый</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Оператор</th>
+                            <th>Стоимость</th>
+                            <th>Время доставки</th>
+                            <th>Расстояние</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($results_to_show as $res): ?>
+                        <tr>
+                            <td style="color: <?= $res['carrier']['color'] ?>"><strong><?= htmlspecialchars($res['carrier']['name']) ?></strong></td>
+                            <td><strong><?= $res['cost'] ?> BYN</strong></td>
+                            <td>~<?= $res['hours'] ?> ч</td>
+                            <td><?= round($res['distance']) ?> км</td>
+                            <td>
+                                <a href="order_form.php?carrier=<?= $res['carrier']['id'] ?>&weight=<?= ($_POST['package_type'] === 'letter' ? ($_POST['letter_count'] ?? 1) * 0.02 : $_POST['weight'] ?? 1) ?>&cost=<?= $res['cost'] ?>" 
+                                   class="btn btn-sm btn-success">Оформить</a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <?php
+        }
+    }
+    ?>
+
     <?php if($error): ?>
     <div class="alert alert-danger mt-4"><?= $error ?></div>
     <?php endif; ?>
 </div>
+
+<!-- Footer -->
+<footer class="footer mt-5 py-4 bg-light border-top">
+    <div class="container text-center">
+        <p class="mb-1">&copy; 2025 Служба доставки. Все права защищены.</p>
+        <p class="mb-1">Контактный телефон: +375 (29) 123-45-67</p>
+        <p class="mb-0">Email: info@delivery.by</p>
+    </div>
+</footer>
 
 <script>
 let selected = null;
