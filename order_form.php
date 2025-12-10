@@ -82,9 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $track = strtoupper(substr(md5(uniqid()), 0, 12));
 
             // Вставляем заказ в базу данных
-            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, from_office, to_office, weight, cost, track_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, from_office, to_office, weight, cost, track_number, created_at, full_name, home_address, desired_date, insurance, packaging, fragile, payment_method, comment) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
-                $user['id'], $carrier_id, $from_office, $to_office, $weight, $cost, $track
+                $user['id'], $carrier_id, $from_office, $to_office, $weight, $cost, $track, $full_name, $home_address, $desired_date, $insurance, $packaging, $fragile, $payment_method, $comment
             ]);
 
             $success = true;
@@ -250,23 +250,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <h4 class="section-title">Информация о доставке</h4>
                         
                         <div class="info-box">
-                            <strong>Важно:</strong> Офисы получения и доставки посылки были переданы из калькулятора.
+                            <strong>Важно:</strong> Выберите офисы получения и доставки посылки.
                         </div>
                         
-                        <!-- Скрытое поле для from_office -->
-                        <input type="hidden" name="from_office" id="selected-from-office" value="<?= $preselected_from_office ?>">
-                        
-                        <!-- Скрытое поле для to_office -->
-                        <input type="hidden" name="to_office" id="selected-to-office" value="<?= $preselected_to_office ?>">
-                        
                         <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Офис получения</label>
-                                <input type="text" class="form-control" value="<?= $from_office_info ? htmlspecialchars($from_office_info['city']) . ' — ' . htmlspecialchars($from_office_info['address']) : 'Не выбран' ?>" readonly>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Офис получения <span class="text-danger">*</span></label>
+                                <select name="from_office" class="form-select" required>
+                                    <option value="">Выберите офис получения</option>
+                                    <?php 
+                                    $offices = $db->query("SELECT o.*, c.name as carrier_name FROM offices o LEFT JOIN carriers c ON o.carrier_id = c.id ORDER BY c.name, o.city")->fetchAll();
+                                    foreach($offices as $office): 
+                                    ?>
+                                        <option value="<?= $office['id'] ?>" <?= ($preselected_from_office == $office['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($office['carrier_name']) ?>, <?= htmlspecialchars($office['city']) ?> — <?= htmlspecialchars($office['address']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Офис доставки</label>
-                                <input type="text" class="form-control" value="<?= $to_office_info ? htmlspecialchars($to_office_info['city']) . ' — ' . htmlspecialchars($to_office_info['address']) : 'Не выбран' ?>" readonly>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Офис доставки <span class="text-danger">*</span></label>
+                                <select name="to_office" class="form-select" required>
+                                    <option value="">Выберите офис доставки</option>
+                                    <?php foreach($offices as $office): ?>
+                                        <option value="<?= $office['id'] ?>" <?= ($preselected_to_office == $office['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($office['carrier_name']) ?>, <?= htmlspecialchars($office['city']) ?> — <?= htmlspecialchars($office['address']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                     </div>

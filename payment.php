@@ -31,10 +31,14 @@ $success = false;
 if (isset($_POST['confirm_payment'])) {
     // Update order status to paid/confirmed
     $stmt = $db->prepare("UPDATE orders SET payment_status = 'paid', tracking_status = 'processed' WHERE id = ?");
-    $stmt->execute([$order['id']]);
+    $stmt->execute([$order["id"]]);
     
+    // Add to status history
+    $status_stmt = $db->prepare("INSERT INTO tracking_status_history (order_id, status, description) VALUES (?, ?, ?)");
+    $status_stmt->execute([$order["id"], "processed", "Заказ оплачен и обработан"]);
+
     // Redirect to success page
-    header("Location: payment_success.php?order_id=" . $order['id']);
+    header("Location: payment_success.php?order_id=" . $order["id"]);
     exit;
 }
 
