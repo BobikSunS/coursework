@@ -348,9 +348,14 @@ $status_options = [
                     <h4>Список отделений</h4>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <!-- Search input for offices -->
+                    <div class="mb-3">
+                        <input type="text" id="office-search" class="form-control" placeholder="Поиск по адресу отделения...">
+                    </div>
+                    
+                    <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
                         <table class="table table-hover">
-                            <thead class="table-dark">
+                            <thead class="table-dark sticky-top">
                                 <tr>
                                     <th>Оператор</th>
                                     <th>Город</th>
@@ -358,12 +363,12 @@ $status_options = [
                                     <th></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="office-table-body">
                                 <?php foreach($offices as $office): ?>
                                 <tr>
                                     <td><strong style="color:<?= $office['carrier_id'] ? $carriers[array_search($office['carrier_id'], array_column($carriers, 'id'))]['color'] ?? '#000000' : '#000000' ?>"><?= htmlspecialchars($office['carrier_name'] ?? 'Н/Д') ?></strong></td>
                                     <td><?= htmlspecialchars($office['city']) ?></td>
-                                    <td><?= htmlspecialchars($office['address']) ?></td>
+                                    <td id="office-address-<?= $office['id'] ?>"><?= htmlspecialchars($office['address']) ?></td>
                                     <td>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Удалить отделение в <?= addslashes(htmlspecialchars($office['city'])) ?>, <?= addslashes(htmlspecialchars($office['address'])) ?>?');">
                                             <input type="hidden" name="action" value="delete_office">
@@ -430,9 +435,14 @@ $status_options = [
             <h4>Управление статусами заказов</h4>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <!-- Search input for orders -->
+            <div class="mb-3">
+                <input type="text" id="order-search" class="form-control" placeholder="Поиск по имени клиента...">
+            </div>
+            
+            <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
                 <table class="table table-hover">
-                    <thead class="table-dark">
+                    <thead class="table-dark sticky-top">
                         <tr>
                             <th>Трек</th>
                             <th>Клиент</th>
@@ -442,11 +452,11 @@ $status_options = [
                             <th>Изменить статус</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="order-table-body">
                         <?php foreach($recent_orders as $order): ?>
                         <tr>
                             <td><strong><?= htmlspecialchars($order['track_number']) ?></strong></td>
-                            <td><?= htmlspecialchars($order['user_name'] ?? 'Н/Д') ?></td>
+                            <td id="order-user-<?= $order['id'] ?>"><?= htmlspecialchars($order['user_name'] ?? 'Н/Д') ?></td>
                             <td><?= htmlspecialchars($order['carrier_name'] ?? 'Н/Д') ?></td>
                             <td><?= $order['cost'] ?> BYN</td>
                             <td>
@@ -455,10 +465,10 @@ $status_options = [
                                 </span>
                             </td>
                             <td>
-                                <form method="POST" class="d-inline">
+                                <form method="POST" class="d-inline status-form" onsubmit="updateStatus(event, <?= $order['id'] ?>)">
                                     <input type="hidden" name="action" value="update_status">
                                     <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
-                                    <select name="new_status" class="form-select form-select-sm d-inline w-auto me-2">
+                                    <select name="new_status" class="form-select form-select-sm d-inline w-auto me-2 status-select" data-order-id="<?= $order['id'] ?>">
                                         <?php foreach($status_options as $status_key => $status_name): ?>
                                         <option value="<?= $status_key ?>" <?= (($order['tracking_status'] ?? 'created') == $status_key) ? 'selected' : '' ?>>
                                             <?= $status_name ?>
@@ -531,6 +541,80 @@ new Chart(document.getElementById('chartCarriers'), {
         }]
     },
     options: { responsive: true }
+});
+
+// Function to update status via AJAX
+function updateStatus(event, orderId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => {
+        // Show a temporary success message
+        const row = form.closest('tr');
+        const statusCell = row.querySelector('.status-badge');
+        const newStatusValue = form.querySelector('select[name="new_status"]').value;
+        const newStatusText = form.querySelector('select[name="new_status"] option:checked').text;
+        
+        // Update the status badge text
+        statusCell.textContent = newStatusText;
+        
+        // Show temporary success feedback
+        statusCell.classList.remove('bg-info');
+        statusCell.classList.add('bg-success');
+        setTimeout(() => {
+            statusCell.classList.remove('bg-success');
+            statusCell.classList.add('bg-info');
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Error updating status:', error);
+        alert('Ошибка при обновлении статуса заказа');
+    });
+}
+
+// Search functionality for offices
+document.getElementById('office-search').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const tableBody = document.getElementById('office-table-body');
+    const rows = tableBody.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const addressCell = rows[i].querySelector('td:nth-child(3)'); // Address is in 3rd column
+        if (addressCell) {
+            const addressText = addressCell.textContent.toLowerCase();
+            if (addressText.includes(searchTerm)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    }
+});
+
+// Search functionality for orders
+document.getElementById('order-search').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const tableBody = document.getElementById('order-table-body');
+    const rows = tableBody.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const userCell = rows[i].querySelector('td:nth-child(2)'); // User name is in 2nd column
+        if (userCell) {
+            const userText = userCell.textContent.toLowerCase();
+            if (userText.includes(searchTerm)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    }
 });
 </script>
 </body>

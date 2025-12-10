@@ -1,1 +1,4 @@
-(payment_success.php and update_payment_column.sql are source files, and the other changes are also source/config files like .cs, .php, .sql)
+```
+# Database files
+*.sql
+```
