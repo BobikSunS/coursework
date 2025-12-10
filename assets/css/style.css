@@ -1,0 +1,77 @@
+:root {
+    --bg-light: linear-gradient(135deg, #667eea, #764ba2);
+    --bg-dark: linear-gradient(135deg, #0f0f1e, #1a1a2e);
+    --card-light: rgba(255,255,255,0.95);
+    --card-dark: #16213e;
+    --text-light: #333;
+    --text-dark: #e0e0e0;
+    --border-selected: #ffd700;
+}
+
+body {
+    background: var(--bg-light);
+    color: var(--text-light);
+    min-height: 100vh;
+    transition: all 0.4s;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body.dark {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+.card, .table {
+    background: var(--card-light) !important;
+    color: var(--text-light);
+}
+
+body.dark .card,
+body.dark .table,
+body.dark .table td,
+body.dark .table th {
+    background: var(--card-dark) !important;
+    color: var(--text-dark) !important;
+    border-color: #444 !important;
+}
+
+.carrier-card {
+    transition: all 0.4s ease;
+    border: 4px solid transparent;
+    cursor: pointer;
+    border-radius: 20px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+
+.carrier-card:hover {
+    transform: translateY(-12px) scale(1.05);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+}
+
+.carrier-card.selected {
+    border-color: var(--border-selected) !important;
+    box-shadow: 0 0 30px rgba(255,215,0,0.7);
+    transform: scale(1.08);
+}
+
+.form-control, .form-select {
+    background: rgba(255,255,255,0.9);
+    color: #333;
+}
+
+body.dark .form-control,
+body.dark .form-select {
+    background: #1e1e2e !important;
+    color: #fff !important;
+    border-color: #444;
+}
+
+.result-box {
+    border-left: 8px solid #ffd700;
+    background: linear-gradient(90deg, rgba(255,215,0,0.1), transparent);
+}
+
+@media (max-width: 768px) {
+    .carrier-card { margin-bottom: 20px; }
+    .col-md-4, .col-md-6 { margin-bottom: 15px; }
+}
