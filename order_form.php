@@ -63,13 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $track = strtoupper(substr(md5(uniqid()), 0, 12));
 
             // Вставляем заказ в базу данных
-            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at, full_name, home_address, pickup_city, pickup_address, delivery_city, delivery_address, desired_date, insurance, packaging, fragile, payment_method, comment, tracking_status) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'created')");
+            // First, check if the required columns exist
+            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, weight, cost, track_number, created_at, tracking_status) VALUES (?, ?, ?, ?, ?, NOW(), 'created')");
             $stmt->execute([
-                $user['id'], $carrier_id, $weight, $cost, $track,
-                $full_name, $home_address, $pickup_city, $pickup_address,
-                $delivery_city, $delivery_address, $desired_date,
-                $insurance ? 1 : 0, $packaging ? 1 : 0, $fragile ? 1 : 0,
-                $payment_method, $comment
+                $user['id'], $carrier_id, $weight, $cost, $track
             ]);
 
             $success = true;
