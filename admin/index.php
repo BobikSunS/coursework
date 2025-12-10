@@ -49,14 +49,12 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_status') {
     $order_id = (int)($_POST['order_id'] ?? 0);
     $new_status = $_POST['new_status'] ?? 'created';
     
-    // Since there's no tracking_status column in orders table, we need to handle this differently
-    // For now, we'll just skip updating the tracking_status since it doesn't exist
-    // In a real implementation, you'd need to add this column to the orders table
-    // $stmt = $db->prepare("UPDATE orders SET tracking_status=? WHERE id=?");
-    // $stmt->execute([$new_status, $order_id]);
-    
-    // Add to status history if tracking_status_history table exists
+    // Update the tracking_status in the orders table
     try {
+        $stmt = $db->prepare("UPDATE orders SET tracking_status=? WHERE id=?");
+        $stmt->execute([$new_status, $order_id]);
+        
+        // Add to status history
         $stmt = $db->prepare("INSERT INTO tracking_status_history (order_id, status, description) VALUES (?, ?, ?)");
         $status_descriptions = [
             'created' => 'Заказ создан',
@@ -71,7 +69,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_status') {
         ];
         $stmt->execute([$order_id, $new_status, $status_descriptions[$new_status] ?? 'Статус обновлен']);
     } catch (PDOException $e) {
-        // If tracking_status_history table doesn't exist, ignore the error
+        // Handle error silently or log it
+        error_log("Error updating order status: " . $e->getMessage());
     }
 }
 
@@ -84,6 +83,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'add_office') {
     if ($carrier_id > 0 && !empty($city) && !empty($address)) {
         $stmt = $db->prepare("INSERT INTO offices (carrier_id, city, address) VALUES (?, ?, ?)");
         $stmt->execute([$carrier_id, $city, $address]);
+    }
+}
+
+// Обработка удаления отделения
+if (isset($_POST['action']) && $_POST['action'] === 'delete_office') {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id > 0) {
+        $stmt = $db->prepare("DELETE FROM offices WHERE id = ?");
+        $stmt->execute([$id]);
     }
 }
 
@@ -131,6 +139,7 @@ $recent_orders = $db->query("
 ")->fetchAll();
 
 $carriers = $db->query("SELECT * FROM carriers")->fetchAll();
+$offices = $db->query("SELECT o.*, c.name as carrier_name FROM offices o LEFT JOIN carriers c ON o.carrier_id = c.id ORDER BY c.name, o.city")->fetchAll();
 
 // Define status options
 $status_options = [
@@ -332,6 +341,43 @@ $status_options = [
                     </form>
                 </div>
             </div>
+            
+            <!-- Список отделений с возможностью удаления -->
+            <div class="card mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4>Список отделений</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Оператор</th>
+                                    <th>Город</th>
+                                    <th>Адрес</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach($offices as $office): ?>
+                                <tr>
+                                    <td><strong style="color:<?= $office['carrier_id'] ? $carriers[array_search($office['carrier_id'], array_column($carriers, 'id'))]['color'] ?? '#000000' : '#000000' ?>"><?= htmlspecialchars($office['carrier_name'] ?? 'Н/Д') ?></strong></td>
+                                    <td><?= htmlspecialchars($office['city']) ?></td>
+                                    <td><?= htmlspecialchars($office['address']) ?></td>
+                                    <td>
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Удалить отделение в <?= addslashes(htmlspecialchars($office['city'])) ?>, <?= addslashes(htmlspecialchars($office['address'])) ?>?');">
+                                            <input type="hidden" name="action" value="delete_office">
+                                            <input type="hidden" name="id" value="<?= $office['id'] ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Статистика по статусам заказов -->
@@ -342,7 +388,7 @@ $status_options = [
                 </div>
                 <div class="card-body">
                     <?php
-                    // Get order counts by status - since there's no tracking_status column, we'll show a message
+                    // Get order counts by status
                     try {
                         $status_stats = $db->query("
                             SELECT 
