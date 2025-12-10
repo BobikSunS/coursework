@@ -16,29 +16,29 @@ namespace DeliveryLoggingServer
         public DateTime Timestamp { get; set; }
         
         [JsonPropertyName("level")]
-        public string Level { get; set; }
+        public string Level { get; set; } = string.Empty;
         
         [JsonPropertyName("message")]
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
         
         [JsonPropertyName("details")]
-        public Dictionary<string, object> Details { get; set; }
+        public Dictionary<string, object>? Details { get; set; }
         
         [JsonPropertyName("user")]
-        public string User { get; set; }
+        public string User { get; set; } = string.Empty;
         
         [JsonPropertyName("ip")]
-        public string IP { get; set; }
+        public string IP { get; set; } = string.Empty;
     }
 
     public class LoggingServer
     {
-        private HttpListener listener;
+        private HttpListener? listener;
         private string logDirectory;
         private List<LogEntry> logBuffer;
         private readonly object bufferLock = new object();
         private readonly object fileLock = new object();
-        private Timer flushTimer;
+        private Timer? flushTimer;
         private const int BUFFER_SIZE = 100;
         private const int FLUSH_INTERVAL_MS = 5000; // 5 seconds
 
@@ -375,7 +375,7 @@ namespace DeliveryLoggingServer
             return Path.Combine(logDirectory, $"log_{date}.json");
         }
 
-        private void FlushLogs(object state)
+        private void FlushLogs(object? state)
         {
             List<LogEntry> logsToWrite;
             

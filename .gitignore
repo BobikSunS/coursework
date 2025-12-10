@@ -1,1 +1,1 @@
-Nothing needs to be added to .gitignore since the changes only include source code files (.php, .css) and a text file, with no build artifacts, dependencies, or temporary files present in the change list.
+(payment_success.php and update_payment_column.sql are source files, and the other changes are also source/config files like .cs, .php, .sql)

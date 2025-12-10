@@ -33,7 +33,9 @@ if (isset($_POST['confirm_payment'])) {
     $stmt = $db->prepare("UPDATE orders SET payment_status = 'paid', tracking_status = 'processed' WHERE id = ?");
     $stmt->execute([$order['id']]);
     
-    $success = true;
+    // Redirect to success page
+    header("Location: payment_success.php?order_id=" . $order['id']);
+    exit;
 }
 
 // Get carrier information
@@ -148,8 +150,8 @@ $carrier = $carrier_stmt->fetch();
                             <div class="col-md-6">
                                 <p><strong>Дата создания:</strong> <?= date('d.m.Y H:i', strtotime($order['created_at'])) ?></p>
                                 <p><strong>Статус оплаты:</strong> 
-                                    <span class="badge bg-<?= $order['payment_status'] === 'paid' ? 'success' : 'warning' ?>">
-                                        <?= $order['payment_status'] === 'paid' ? 'Оплачен' : 'Не оплачен' ?>
+                                    <span class="badge bg-<?= (isset($order['payment_status']) && $order['payment_status'] === 'paid') ? 'success' : 'warning' ?>">
+                                        <?= (isset($order['payment_status']) && $order['payment_status'] === 'paid') ? 'Оплачен' : 'Не оплачен' ?>
                                     </span>
                                 </p>
                                 <p><strong>Трек-номер:</strong> <?= htmlspecialchars($order['track_number']) ?></p>
