@@ -81,11 +81,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Генерируем трек-номер
             $track = strtoupper(substr(md5(uniqid()), 0, 12));
 
-            // Вставляем заказ в базу данных
-            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, from_office, to_office, weight, cost, track_number, created_at, full_name, home_address, desired_date, insurance, packaging, fragile, payment_method, comment) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)");
+            // Вставляем заказ в базу данных (без колонок, которые могут отсутствовать в БД)
+            $stmt = $db->prepare("INSERT INTO orders (user_id, carrier_id, from_office, to_office, weight, cost, track_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->execute([
-                $user['id'], $carrier_id, $from_office, $to_office, $weight, $cost, $track, $full_name, $home_address, $desired_date, $insurance, $packaging, $fragile, $payment_method, $comment
+                $user['id'], $carrier_id, $from_office, $to_office, $weight, $cost, $track
             ]);
+            
+            // Получаем ID созданного заказа
+            $order_id = $db->lastInsertId();
+            
+            // Теперь обновляем заказ с дополнительными полями, игнорируя ошибки для отсутствующих колонок
+            $update_fields = [];
+            $update_values = [];
+            
+            // Проверяем существование колонок перед обновлением
+            $columns_query = $db->query("SHOW COLUMNS FROM orders");
+            $existing_columns = [];
+            while ($row = $columns_query->fetch()) {
+                $existing_columns[] = $row['Field'];
+            }
+            
+            if (in_array('full_name', $existing_columns)) {
+                $update_fields[] = "full_name = ?";
+                $update_values[] = $full_name;
+            }
+            if (in_array('home_address', $existing_columns)) {
+                $update_fields[] = "home_address = ?";
+                $update_values[] = $home_address;
+            }
+            if (in_array('desired_date', $existing_columns)) {
+                $update_fields[] = "desired_date = ?";
+                $update_values[] = $desired_date;
+            }
+            if (in_array('insurance', $existing_columns)) {
+                $update_fields[] = "insurance = ?";
+                $update_values[] = $insurance;
+            }
+            if (in_array('packaging', $existing_columns)) {
+                $update_fields[] = "packaging = ?";
+                $update_values[] = $packaging;
+            }
+            if (in_array('fragile', $existing_columns)) {
+                $update_fields[] = "fragile = ?";
+                $update_values[] = $fragile;
+            }
+            if (in_array('payment_method', $existing_columns)) {
+                $update_fields[] = "payment_method = ?";
+                $update_values[] = $payment_method;
+            }
+            if (in_array('comment', $existing_columns)) {
+                $update_fields[] = "comment = ?";
+                $update_values[] = $comment;
+            }
+            if (in_array('tracking_status', $existing_columns)) {
+                $update_fields[] = "tracking_status = ?";
+                $update_values[] = 'Создан';
+            }
+            
+            if (!empty($update_fields)) {
+                $update_values[] = $order_id; // for WHERE clause
+                $stmt_update = $db->prepare("UPDATE orders SET " . implode(", ", $update_fields) . " WHERE id = ?");
+                $stmt_update->execute($update_values);
+            }
 
             $success = true;
             $track_number = $track;
