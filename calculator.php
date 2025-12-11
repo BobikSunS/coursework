@@ -418,6 +418,13 @@ function selectCarrier(id, name) {
                 sel.innerHTML = '<option value="">Выберите</option>' + 
                     data.map(o => `<option value="${o.id}">${o.city} — ${o.address}</option>`).join('');
             });
+            
+            // Initialize search for newly loaded selects
+            const fromSelect = document.querySelector('select[name="from"]');
+            const toSelect = document.querySelector('select[name="to"]');
+            
+            if (fromSelect) addSearchToSelect(fromSelect);
+            if (toSelect) addSearchToSelect(toSelect);
         });
 }
 
@@ -435,7 +442,7 @@ function addSearchToSelect(selectElement) {
     searchInput.placeholder = 'Поиск...';
     searchInput.style.marginBottom = '5px';
     searchInput.style.cursor = 'pointer';
-    searchInput.readOnly = true; // Make it read-only so it doesn't interfere with selection
+    searchInput.readOnly = false; // Allow typing for search functionality
     
     // Create a dropdown container that's initially hidden
     const dropdownContainer = document.createElement('div');
@@ -535,15 +542,6 @@ function addSearchToSelect(selectElement) {
     });
 }
 
-// Initialize search for select elements when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Add search functionality to existing selects
-    const fromSelect = document.querySelector('select[name="from"]');
-    const toSelect = document.querySelector('select[name="to"]');
-    
-    if (fromSelect) addSearchToSelect(fromSelect);
-    if (toSelect) addSearchToSelect(toSelect);
-});
 
 function toggleFields(type) {
     const isLetter = type === 'letter';
@@ -551,6 +549,20 @@ function toggleFields(type) {
     document.getElementById('letter-div').style.display = isLetter ? 'block' : 'none';
     document.getElementById('gabarit-div').style.display = isLetter ? 'none' : 'block';
 }
+
+// Initialize search for select elements when DOM is loaded if carrier is already selected
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if a carrier is already selected (e.g., from a previous form submission or GET parameter)
+    const selectedCarrier = document.getElementById('selected-carrier');
+    if (selectedCarrier && selectedCarrier.value) {
+        // Initialize search for existing selects
+        const fromSelect = document.querySelector('select[name="from"]');
+        const toSelect = document.querySelector('select[name="to"]');
+        
+        if (fromSelect) addSearchToSelect(fromSelect);
+        if (toSelect) addSearchToSelect(toSelect);
+    }
+});
 
 // Theme functionality for cross-page consistency
 function toggleTheme() {

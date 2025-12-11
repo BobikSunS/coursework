@@ -49,28 +49,30 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_status') {
     $order_id = (int)($_POST['order_id'] ?? 0);
     $new_status = $_POST['new_status'] ?? 'created';
     
-    // Update the tracking_status in the orders table
-    try {
-        $stmt = $db->prepare("UPDATE orders SET tracking_status=? WHERE id=?");
-        $stmt->execute([$new_status, $order_id]);
-        
-        // Add to status history
-        $stmt = $db->prepare("INSERT INTO tracking_status_history (order_id, status, description) VALUES (?, ?, ?)");
-        $status_descriptions = [
-            'created' => 'Заказ создан',
-            'processed' => 'Заказ обработан',
-            'in_transit' => 'Посылка в пути',
-            'sort_center' => 'Посылка в сортировочном центре',
-            'delayed' => 'Возможна задержка доставки',
-            'out_for_delivery' => 'Посылка у курьера',
-            'delivered' => 'Заказ доставлен',
-            'returned' => 'Заказ возвращен отправителю',
-            'cancelled' => 'Заказ отменен'
-        ];
-        $stmt->execute([$order_id, $new_status, $status_descriptions[$new_status] ?? 'Статус обновлен']);
-    } catch (PDOException $e) {
-        // Handle error silently or log it
-        error_log("Error updating order status: " . $e->getMessage());
+    // Check if tracking_status column exists
+    $columns_query = $db->query("SHOW COLUMNS FROM orders");
+    $existing_columns = [];
+    while ($row = $columns_query->fetch()) {
+        $existing_columns[] = $row['Field'];
+    }
+    
+    // Update the tracking_status in the orders table if column exists
+    if (in_array('tracking_status', $existing_columns)) {
+        try {
+            $stmt = $db->prepare("UPDATE orders SET tracking_status=? WHERE id=?");
+            $stmt->execute([$new_status, $order_id]);
+            
+            // Check if tracking_status_history table exists
+            $tables_query = $db->query("SHOW TABLES LIKE 'tracking_status_history'");
+            if ($tables_query->rowCount() > 0) {
+                // Add to status history if table exists
+                $stmt = $db->prepare("INSERT INTO tracking_status_history (order_id, status, changed_by) VALUES (?, ?, ?)");
+                $stmt->execute([$order_id, $new_status, $_SESSION['user']['name'] ?? 'admin']);
+            }
+        } catch (PDOException $e) {
+            // Handle error silently or log it
+            error_log("Error updating order status: " . $e->getMessage());
+        }
     }
 }
 
@@ -129,14 +131,34 @@ $top_routes = $db->query("
 ")->fetchAll();
 
 // Заказы для отслеживания статуса
-$recent_orders = $db->query("
-    SELECT o.*, c.name as carrier_name, u.name as user_name 
-    FROM orders o 
-    LEFT JOIN carriers c ON o.carrier_id = c.id 
-    LEFT JOIN users u ON o.user_id = u.id 
-    ORDER BY o.created_at DESC 
-    LIMIT 20
-")->fetchAll();
+// Check if tracking_status column exists
+$columns_query = $db->query("SHOW COLUMNS FROM orders");
+$existing_columns = [];
+while ($row = $columns_query->fetch()) {
+    $existing_columns[] = $row['Field'];
+}
+
+if (in_array('tracking_status', $existing_columns)) {
+    // Use tracking_status column if it exists
+    $recent_orders = $db->query("
+        SELECT o.*, c.name as carrier_name, u.name as user_name
+        FROM orders o
+        LEFT JOIN carriers c ON o.carrier_id = c.id
+        LEFT JOIN users u ON o.user_id = u.id
+        ORDER BY o.created_at DESC
+        LIMIT 20
+    ")->fetchAll();
+} else {
+    // Use all columns but ensure tracking_status is available with default value
+    $recent_orders = $db->query("
+        SELECT o.*, c.name as carrier_name, u.name as user_name, 'created' as tracking_status
+        FROM orders o
+        LEFT JOIN carriers c ON o.carrier_id = c.id
+        LEFT JOIN users u ON o.user_id = u.id
+        ORDER BY o.created_at DESC
+        LIMIT 20
+    ")->fetchAll();
+}
 
 $carriers = $db->query("SELECT * FROM carriers")->fetchAll();
 $offices = $db->query("SELECT o.*, c.name as carrier_name FROM offices o LEFT JOIN carriers c ON o.carrier_id = c.id ORDER BY c.name, o.city")->fetchAll();
